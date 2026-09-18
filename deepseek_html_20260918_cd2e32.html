@@ -1,0 +1,2620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sales Analytics — Desarrollo MP Sala</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect rx='20' width='100' height='100' fill='%238B5CF6'/><text x='50' y='68' font-size='55' text-anchor='middle' fill='white' font-family='sans-serif' font-weight='bold'>MP</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+:root {
+  --surface: #F1F5F9;
+  --panel: #FFFFFF;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --muted: #64748B;
+  --accent: #0F172A;
+  --brand: #2563EB;
+  --brand-dark: #1D4ED8;
+  --ale-brand: #0EA5E9;
+  --ale-brand-dark: #0284C7;
+  --nati-brand: #8B5CF6;
+  --nati-brand-dark: #7C3AED;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.06), 0 2px 4px -2px rgba(0,0,0,0.05);
+  --shadow-lg: 0 10px 25px -5px rgba(0,0,0,0.08), 0 8px 10px -6px rgba(0,0,0,0.04);
+  --shadow-xl: 0 20px 40px -10px rgba(0,0,0,0.1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--surface);
+  color: #1E293B;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.hidden { display: none !important; }
+button { font-family: inherit; }
+input, select { font-family: inherit; }
+::selection { background: rgba(37, 99, 235, 0.15); }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+
+/* SPLASH */
+.splash { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #F8FAFC, #EFF6FF 50%, #F8FAFC); z-index: 200; padding: 2rem; }
+.splash-card { text-align: center; max-width: 420px; width: 100%; }
+.splash-logo { width: 80px; height: 80px; background: linear-gradient(135deg, #8B5CF6, #6D28D9); border-radius: 24px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem; box-shadow: 0 20px 40px -10px rgba(139,92,246,0.4); animation: logoPulse 2s ease-in-out infinite; }
+.splash-logo i { width: 40px; height: 40px; color: #fff; }
+.splash-title { font-size: 1.75rem; font-weight: 900; color: var(--accent); letter-spacing: -0.02em; }
+.splash-sub { font-size: 0.85rem; color: var(--muted); font-weight: 600; margin-top: 0.35rem; }
+.splash-progress { width: 220px; height: 6px; background: #E2E8F0; border-radius: 99px; overflow: hidden; margin: 2rem auto 1rem; }
+.splash-bar { height: 100%; background: linear-gradient(90deg, var(--brand), #60A5FA); border-radius: 99px; animation: loadingBar 2s ease-in-out forwards; }
+.splash-status { font-size: 0.75rem; color: var(--muted); font-weight: 600; margin-top: 0.5rem; min-height: 2.5em; }
+.splash-hint { font-size: 0.65rem; color: #94A3B8; font-weight: 500; margin-top: 1rem; }
+.error-msg { color: #DC2626; font-weight: 700; }
+@keyframes loadingBar { 0% { width: 0; } 20% { width: 30%; } 50% { width: 60%; } 80% { width: 85%; } 100% { width: 100%; } }
+@keyframes logoPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(139,92,246,0.3); } 50% { box-shadow: 0 0 0 14px rgba(139,92,246,0); } }
+
+/* APP */
+.app { display: flex; flex-direction: column; min-height: 100vh; }
+.app-header { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.75rem 1.5rem; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%); border-bottom: 1px solid var(--border); }
+.brand { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+.brand-logo { width: 32px; height: 32px; background: linear-gradient(135deg, #8B5CF6, #6D28D9); border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.brand-logo i { width: 16px; height: 16px; color: #fff; }
+.brand-name { font-size: 0.75rem; font-weight: 900; color: var(--accent); letter-spacing: -0.01em; }
+.brand-sub { font-size: 0.6rem; font-weight: 600; color: var(--muted); }
+.team-tabs { display: flex; gap: 0.25rem; background: #F1F5F9; padding: 0.25rem; border-radius: 14px; }
+.team-tab { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.5rem 1.25rem; border-radius: 10px; border: none; background: transparent; color: var(--muted); font-size: 0.8rem; font-weight: 900; letter-spacing: 0.03em; cursor: pointer; transition: all 0.2s ease; }
+.team-tab:hover:not(.active) { background: #fff; color: #334155; }
+.team-tab-ale.active { background: linear-gradient(135deg, #0EA5E9, #0284C7); color: #fff; box-shadow: 0 4px 14px rgba(14,165,233,0.35); }
+.team-tab-nati.active { background: linear-gradient(135deg, #8B5CF6, #7C3AED); color: #fff; box-shadow: 0 4px 14px rgba(139,92,246,0.35); }
+.header-period { font-size: 0.7rem; font-weight: 600; color: var(--muted); background: #fff; border: 1px solid var(--border); padding: 0.4rem 0.75rem; border-radius: 10px; white-space: nowrap; max-width: 260px; overflow: hidden; text-overflow: ellipsis; }
+
+/* VIEW */
+.view { display: flex; flex: 1; min-height: 0; }
+.sidebar { width: 240px; flex-shrink: 0; background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 100%); border-right: 1px solid var(--border); display: flex; flex-direction: column; height: calc(100vh - 57px); position: sticky; top: 57px; overflow-y: auto; }
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+.sidebar-section { padding: 1rem 0.9rem; border-bottom: 1px solid #F1F5F9; }
+.sidebar-section.sidebar-footer { border-bottom: none; margin-top: auto; }
+.sidebar-title { font-size: 0.6rem; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.75rem; }
+.sidebar-title-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+.sidebar-title-row .sidebar-title { margin-bottom: 0; }
+.field { display: flex; flex-direction: column; gap: 0.25rem; margin-bottom: 0.65rem; }
+.field > span { font-size: 0.65rem; font-weight: 700; color: var(--muted); padding-left: 0.25rem; display: flex; align-items: center; gap: 0.3rem; }
+.inline-icon { width: 12px; height: 12px; }
+.field-mp { margin-top: 0.5rem; padding: 0.75rem; border-left: 3px solid var(--brand); background: #EFF6FF; border-radius: 0 10px 10px 0; }
+.filter-select { width: 100%; background: #fff; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: 0.8rem; font-weight: 500; color: #1E293B; outline: none; cursor: pointer; transition: all 0.2s ease; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748B' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.7rem center; padding-right: 2rem; }
+input.filter-select { background-image: none; padding-right: 0.75rem; }
+.filter-select:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.period-text { font-size: 0.7rem; color: var(--muted); font-weight: 600; line-height: 1.5; }
+.sidebar-actions { padding: 0.9rem; border-top: 1px solid #F1F5F9; display: flex; flex-direction: column; gap: 0.5rem; }
+.main { flex: 1; min-width: 0; background: var(--surface); overflow-y: auto; }
+.main::-webkit-scrollbar { width: 6px; }
+.main::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+.content { max-width: 1400px; margin: 0 auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.spacer-bottom { height: 2rem; }
+
+/* CARDS */
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow-sm); transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+.card:hover { border-color: var(--border-strong); box-shadow: var(--shadow-md); }
+.card-highlight { background: linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 70%); border-color: rgba(37,99,235,0.18); }
+.card-head { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.card-icon { width: 28px; height: 28px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.card-icon i { width: 14px; height: 14px; }
+.card-icon-blue    { background: #EFF6FF; } .card-icon-blue    i { color: #2563EB; }
+.card-icon-violet  { background: #F5F3FF; } .card-icon-violet  i { color: #7C3AED; }
+.card-icon-emerald { background: #ECFDF5; } .card-icon-emerald i { color: #059669; }
+.card-icon-amber   { background: #FFFBEB; } .card-icon-amber   i { color: #D97706; }
+.card-icon-sky     { background: #E0F2FE; } .card-icon-sky     i { color: #0284C7; }
+.card-icon-red     { background: #FEF2F2; } .card-icon-red     i { color: #DC2626; }
+.card-icon-slate   { background: #F1F5F9; } .card-icon-slate   i { color: #475569; }
+.card-title { font-size: 0.85rem; font-weight: 800; color: var(--accent); letter-spacing: -0.01em; }
+.card-sub { font-size: 0.65rem; color: var(--muted); font-weight: 500; margin-top: 0.15rem; }
+.card-insight { font-size: 0.75rem; color: var(--muted); margin-top: 0.75rem; line-height: 1.6; }
+.card-divider { height: 1px; background: var(--border); margin: 1rem 0; }
+.card-head-right { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+.label-inline { font-size: 0.65rem; font-weight: 700; color: var(--muted); }
+.mini-select { font-size: 0.7rem; font-weight: 700; border: 1px solid var(--border); border-radius: 8px; padding: 0.35rem 0.6rem; background: #fff; color: #334155; outline: none; cursor: pointer; }
+.mini-select:focus { border-color: var(--ale-brand); }
+.mini-title { font-size: 0.6rem; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.6rem; }
+.card-search { position: relative; margin-left: auto; }
+.card-search i { position: absolute; left: 0.75rem; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: var(--muted); pointer-events: none; }
+.card-search input { padding: 0.5rem 0.75rem 0.5rem 2rem; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.75rem; outline: none; width: 220px; transition: all 0.2s ease; }
+.card-search input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+.cat-leader { display: flex; align-items: center; gap: 0.5rem; margin-left: auto; background: #EFF6FF; border: 1px solid rgba(37,99,235,0.18); padding: 0.35rem 0.7rem; border-radius: 10px; font-size: 0.65rem; }
+.cat-leader-name { font-weight: 800; color: var(--brand); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-leader-val { font-weight: 900; color: var(--accent); }
+.cat-leader .badge { font-size: 0.6rem; }
+
+/* BUTTONS */
+.btn-primary, .btn-secondary, .btn-ale { display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.6rem 1rem; border-radius: var(--radius-sm); font-size: 0.78rem; font-weight: 700; cursor: pointer; border: none; width: 100%; transition: all 0.2s ease; }
+.btn-primary i, .btn-secondary i, .btn-ale i { width: 14px; height: 14px; }
+.btn-primary { background: var(--brand); color: #fff; box-shadow: 0 1px 3px rgba(37,99,235,0.3); }
+.btn-primary:hover:not(:disabled) { background: var(--brand-dark); box-shadow: 0 6px 16px rgba(37,99,235,0.35); transform: translateY(-1px); }
+.btn-secondary { background: #fff; color: #334155; border: 1px solid var(--border); }
+.btn-secondary:hover:not(:disabled) { background: var(--surface); border-color: var(--border-strong); }
+.btn-ale { background: linear-gradient(135deg, #0EA5E9, #0284C7); color: #fff; box-shadow: 0 2px 8px rgba(14,165,233,0.3); }
+.btn-ale:hover:not(:disabled) { box-shadow: 0 6px 18px rgba(14,165,233,0.4); transform: translateY(-1px); }
+.btn-primary:disabled, .btn-secondary:disabled, .btn-ale:disabled { opacity: 0.6; cursor: not-allowed; }
+.link-btn { background: none; border: none; color: #0284C7; font-size: 0.65rem; font-weight: 800; cursor: pointer; padding: 0; }
+.link-btn:hover { color: #075985; }
+
+/* GRIDS */
+.grid-2-1 { display: grid; grid-template-columns: 2fr 1fr; gap: 1.25rem; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25rem; }
+@media (max-width: 1100px) { .grid-2-1 { grid-template-columns: 1fr; } .grid-3 { grid-template-columns: 1fr; } }
+.kpi-grid { display: grid; gap: 0.75rem; }
+.kpi-grid-6 { grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 720px)  { .kpi-grid-6 { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1100px) { .kpi-grid-6 { grid-template-columns: repeat(6, 1fr); } }
+
+/* KPI */
+.kpi-card { position: relative; background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem 1.1rem; box-shadow: var(--shadow-sm); transition: all 0.25s ease; overflow: hidden; min-height: 105px; }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+.kpi-icon { position: absolute; top: 0.75rem; right: 0.75rem; opacity: 0.15; transition: opacity 0.25s, transform 0.25s; }
+.kpi-icon i { width: 44px; height: 44px; }
+.kpi-card:hover .kpi-icon { opacity: 0.3; transform: scale(1.08) rotate(-4deg); }
+.kpi-title { font-size: 0.6rem; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; padding-right: 3rem; line-height: 1.3; }
+.kpi-value { font-size: 1.4rem; font-weight: 900; color: var(--accent); letter-spacing: -0.02em; line-height: 1.1; }
+.kpi-sub { font-size: 0.68rem; color: var(--muted); margin-top: 0.35rem; font-weight: 500; }
+.kpi-blue   .kpi-icon i { color: #2563EB; } .kpi-blue   .kpi-value { color: #1D4ED8; }
+.kpi-emerald .kpi-icon i { color: #10B981; } .kpi-emerald .kpi-value { color: #047857; }
+.kpi-red    .kpi-icon i { color: #EF4444; } .kpi-red    .kpi-value { color: #B91C1C; }
+.kpi-violet .kpi-icon i { color: #8B5CF6; } .kpi-violet .kpi-value { color: #6D28D9; }
+.kpi-amber  .kpi-icon i { color: #F59E0B; } .kpi-amber  .kpi-value { color: #B45309; }
+.kpi-sky    .kpi-icon i { color: #0EA5E9; } .kpi-sky    .kpi-value { color: #0369A1; }
+.kpi-slate  .kpi-icon i { color: #64748B; } .kpi-slate  .kpi-value { color: #475569; }
+.kpi-blue   { border-left: 3px solid #2563EB; }
+.kpi-emerald { border-left: 3px solid #10B981; }
+.kpi-red    { border-left: 3px solid #EF4444; }
+.kpi-violet { border-left: 3px solid #8B5CF6; }
+.kpi-amber  { border-left: 3px solid #F59E0B; }
+.kpi-sky    { border-left: 3px solid #0EA5E9; }
+.kpi-slate  { border-left: 3px solid #94A3B8; }
+.audit-trigger { cursor: pointer; }
+.audit-trigger:hover { border-color: var(--brand); }
+
+/* CHARTS */
+.chart-wrap { position: relative; width: 100%; }
+.chart-legend { margin-left: auto; text-align: right; }
+.legend-value { font-size: 0.85rem; font-weight: 900; color: var(--accent); }
+.legend-sub { font-size: 0.6rem; color: var(--muted); margin-top: 0.1rem; }
+.legend-delta { display: inline-block; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 8px; margin-top: 0.25rem; }
+.legend-delta.up { background: #ECFDF5; color: #059669; }
+.legend-delta.down { background: #FEF2F2; color: #DC2626; }
+
+/* TABLES */
+.table-scroll { overflow-x: auto; max-height: 560px; overflow-y: auto; }
+.table-scroll::-webkit-scrollbar { width: 5px; height: 5px; }
+.table-scroll::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+.data-table { width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.75rem; }
+.data-table thead th { position: sticky; top: 0; z-index: 10; background: #F8FAFC; text-transform: uppercase; font-size: 0.6rem; font-weight: 800; letter-spacing: 0.06em; color: var(--muted); padding: 0.75rem; text-align: left; border-bottom: 2px solid var(--border); white-space: nowrap; }
+.data-table tbody td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #F1F5F9; color: #334155; vertical-align: middle; }
+.data-table tbody tr { transition: background-color 0.15s ease; }
+.data-table tbody tr:hover { background: #F0F9FF; }
+.align-l { text-align: left; } .align-r { text-align: right; } .align-c { text-align: center; }
+.w-8 { width: 2rem; }
+.row-num { text-align: center; font-weight: 800; color: #94A3B8; }
+.cell-center { text-align: center; }
+.cell-strong { font-weight: 700; color: var(--accent); max-width: 260px; }
+.cell-muted { color: var(--muted); max-width: 140px; }
+.cell-num { text-align: right; font-variant-numeric: tabular-nums; }
+.cell-num.cell-strong { font-weight: 800; }
+.truncate { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.badge { display: inline-block; font-size: 0.65rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 6px; white-space: nowrap; }
+.badge-blue   { background: #DBEAFE; color: #1E40AF; }
+.badge-green  { background: #DCFCE7; color: #166534; }
+.badge-red    { background: #FEE2E2; color: #991B1B; }
+.badge-yellow { background: #FEF3C7; color: #92400E; }
+.badge-gray   { background: #F1F5F9; color: #475569; }
+.chip { display: inline-block; font-size: 0.62rem; font-weight: 800; padding: 0.2rem 0.55rem; border-radius: 6px; background: #F1F5F9; color: #475569; }
+.chip-sky { background: #E0F2FE; color: #075985; }
+.text-emerald { color: #059669 !important; }
+.text-red     { color: #DC2626 !important; }
+.text-blue    { color: #2563EB !important; }
+.text-sky     { color: #0284C7 !important; }
+.text-muted   { color: var(--muted); }
+
+/* INSIGHTS */
+.insights-list { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+.insight-item { display: flex; gap: 0.7rem; padding: 0.8rem 0.9rem; border-radius: 10px; border: 1px solid var(--border); background: #fff; font-size: 0.75rem; line-height: 1.55; transition: all 0.2s ease; }
+.insight-item:hover { border-color: #93C5FD; background: #F8FAFF; }
+.insight-icon { width: 22px; height: 22px; border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+.insight-icon i { width: 12px; height: 12px; }
+.insight-red     { background: #FEF2F2; } .insight-red     i { color: #DC2626; }
+.insight-emerald { background: #ECFDF5; } .insight-emerald i { color: #059669; }
+.insight-amber   { background: #FFFBEB; } .insight-amber   i { color: #D97706; }
+.insight-blue    { background: #EFF6FF; } .insight-blue    i { color: #2563EB; }
+.insight-slate   { background: #F1F5F9; } .insight-slate   i { color: #475569; }
+.insight-title { font-size: 0.72rem; font-weight: 800; color: var(--accent); letter-spacing: -0.01em; }
+.insight-text  { font-size: 0.72rem; color: var(--muted); margin-top: 0.2rem; line-height: 1.55; }
+.rec-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; font-size: 0.72rem; color: var(--muted); }
+.rec-item { display: flex; gap: 0.5rem; }
+.rec-item i { width: 12px; height: 12px; margin-top: 3px; color: #F59E0B; flex-shrink: 0; }
+.rec-title { font-weight: 800; color: var(--accent); }
+.rec-text { line-height: 1.55; }
+
+/* MIX BARS */
+.mix-bar-wrap { display: flex; flex-direction: column; gap: 0.2rem; min-width: 80px; }
+.mix-bar { width: 100%; height: 6px; background: #F1F5F9; border-radius: 99px; overflow: hidden; }
+.mix-bar > div { height: 100%; border-radius: 99px; transition: width 0.4s ease; }
+.mix-bar-emerald { background: #10B981; }
+.mix-bar-blue    { background: #3B82F6; }
+.mix-label { font-size: 0.62rem; text-align: center; font-weight: 700; }
+.mix-emerald { color: #059669; }
+.mix-muted   { color: var(--muted); }
+
+/* MP PANEL */
+.mp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+.mp-card { background: #fff; border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; }
+.mp-card-highlight { background: #EFF6FF; border-color: rgba(37,99,235,0.2); }
+.mp-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.62rem; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+.mp-card-head i { width: 14px; height: 14px; color: var(--brand); }
+.mp-big { font-size: 1.75rem; font-weight: 900; color: var(--accent); display: flex; align-items: baseline; gap: 0.5rem; margin-bottom: 0.75rem; }
+.mp-delta { font-size: 0.75rem; font-weight: 800; }
+.mp-delta.up { color: #059669; } .mp-delta.down { color: #DC2626; }
+.mp-bar { display: flex; height: 8px; border-radius: 99px; overflow: hidden; background: #E2E8F0; margin-bottom: 0.5rem; }
+.mp-bar-emerald { background: #10B981; }
+.mp-bar-rest { background: #CBD5E1; }
+.mp-legend { display: flex; justify-content: space-between; font-size: 0.65rem; font-weight: 700; color: var(--muted); }
+.mp-velocity { display: flex; flex-direction: column; gap: 0.75rem; }
+.mp-row { display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 700; margin-bottom: 0.3rem; }
+.mp-bar-thin { height: 6px; background: #E2E8F0; border-radius: 99px; overflow: hidden; }
+.mp-bar-thin > div { height: 100%; border-radius: 99px; }
+.mp-winner { font-size: 0.78rem; font-weight: 800; color: var(--accent); line-height: 1.4; margin-bottom: 0.75rem; }
+.mp-footer { border-top: 1px solid var(--border); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.mp-footer p { display: flex; justify-content: space-between; font-size: 0.68rem; color: var(--muted); }
+.mp-footer p span:last-child { font-weight: 800; color: var(--accent); }
+
+/* ALE SELECTOR */
+.ale-selector-screen { min-height: calc(100vh - 57px); display: flex; align-items: center; justify-content: center; padding: 2rem; background: linear-gradient(135deg, #F0F9FF 0%, #F8FAFC 50%, #EFF6FF 100%); }
+.ale-selector-card { background: #fff; border-radius: 24px; padding: 2.5rem 2rem; max-width: 520px; width: 100%; box-shadow: 0 20px 60px -20px rgba(14,165,233,0.25), 0 4px 12px rgba(0,0,0,0.04); border: 1px solid rgba(14,165,233,0.1); }
+.ale-selector-head { text-align: center; margin-bottom: 1.75rem; }
+.ale-selector-icon { width: 56px; height: 56px; background: #E0F2FE; border-radius: 18px; display: flex; align-items: center; justify-content: center; margin: 0 auto 0.9rem; }
+.ale-selector-icon i { width: 28px; height: 28px; color: #0284C7; }
+.ale-selector-eyebrow { font-size: 0.65rem; font-weight: 900; color: #0284C7; text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.5rem; }
+.ale-selector-title { font-size: 1.4rem; font-weight: 900; color: var(--accent); letter-spacing: -0.02em; }
+.ale-selector-help { font-size: 0.75rem; color: var(--muted); margin-top: 0.4rem; font-weight: 600; }
+.ale-selector-search-wrap { position: relative; }
+.ale-selector-search-wrap > i { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: var(--muted); pointer-events: none; z-index: 2; }
+.ale-selector-search-wrap input { width: 100%; padding: 0.9rem 1rem 0.9rem 2.75rem; border: 2px solid #E2E8F0; border-radius: 14px; background: #F8FAFC; font-size: 0.85rem; font-weight: 600; color: var(--accent); outline: none; transition: all 0.2s ease; }
+.ale-selector-search-wrap input:focus { border-color: var(--ale-brand); background: #fff; box-shadow: 0 0 0 4px rgba(14,165,233,0.12); }
+.ale-selector-dropdown { position: absolute; top: calc(100% + 0.5rem); left: 0; right: 0; background: #fff; border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,0.12); max-height: 280px; overflow-y: auto; padding: 0.4rem; z-index: 30; }
+.ale-selector-group-label { font-size: 0.6rem; font-weight: 900; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.5rem 0.75rem 0.3rem; }
+.ale-selector-option { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.75rem; border-radius: 10px; font-size: 0.8rem; font-weight: 700; color: #334155; cursor: pointer; transition: all 0.15s ease; }
+.ale-selector-option:hover { background: #EFF6FF; color: #0284C7; }
+.ale-selector-option i { width: 14px; height: 14px; color: #0EA5E9; flex-shrink: 0; }
+.ale-selector-empty { padding: 0.9rem; text-align: center; font-size: 0.75rem; color: #94A3B8; font-weight: 600; }
+.ale-selector-divider { display: flex; align-items: center; gap: 0.75rem; margin: 1.1rem 0; font-size: 0.65rem; font-weight: 800; color: #CBD5E1; text-transform: uppercase; }
+.ale-selector-divider::before, .ale-selector-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+/* ALE SIDEBAR */
+.ale-sidebar .sidebar-title { color: #0284C7; }
+.ale-sidebar .filter-select:focus { border-color: var(--ale-brand); box-shadow: 0 0 0 3px rgba(14,165,233,0.12); }
+.ale-mode-group { display: flex; flex-direction: column; gap: 0.4rem; }
+.ale-mode-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.75rem; border-radius: 10px; border: 2px solid #E2E8F0; background: #F8FAFC; color: var(--muted); font-size: 0.7rem; font-weight: 900; letter-spacing: 0.02em; cursor: pointer; transition: all 0.2s ease; }
+.ale-mode-btn i { width: 14px; height: 14px; }
+.ale-mode-btn:hover:not(.active) { background: #EFF6FF; border-color: #BAE6FD; color: #0284C7; }
+.ale-mode-btn.active { background: linear-gradient(135deg, #0EA5E9, #0284C7); border-color: #0EA5E9; color: #fff; box-shadow: 0 4px 12px rgba(14,165,233,0.3); }
+
+/* CONTEXT */
+.context-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem; }
+.back-btn { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.9rem; background: #fff; border: 1px solid var(--border); border-radius: 12px; color: #334155; font-size: 0.72rem; font-weight: 800; cursor: pointer; transition: all 0.2s ease; }
+.back-btn:hover { border-color: var(--ale-brand); color: #0284C7; background: #EFF6FF; }
+.back-btn i { width: 14px; height: 14px; }
+.context-badge { font-size: 0.72rem; font-weight: 800; color: #0284C7; background: #E0F2FE; border: 1px solid rgba(14,165,233,0.2); padding: 0.45rem 0.9rem; border-radius: 12px; }
+.exec-text { font-size: 0.85rem; line-height: 1.75; color: #334155; }
+.exec-text strong { color: var(--accent); font-weight: 800; }
+
+/* RANK PILLS */
+.rank-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.rank-pill { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.7rem; border-radius: 10px; font-size: 0.72rem; font-weight: 700; border: 1px solid; }
+.rank-num { font-weight: 900; opacity: 0.6; width: 18px; text-align: center; flex-shrink: 0; }
+.rank-name { flex: 1; min-width: 0; }
+.rank-val { font-weight: 900; font-size: 0.7rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+.rank-top     { background: #ECFDF5; border-color: #A7F3D0; color: #065F46; }
+.rank-bottom  { background: #FEF2F2; border-color: #FECACA; color: #991B1B; }
+.rank-growth  { background: #EFF6FF; border-color: #BFDBFE; color: #1D4ED8; }
+.rank-decline { background: #FFF7ED; border-color: #FED7AA; color: #9A3412; }
+
+/* ALERTS */
+.alert-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 400px; overflow-y: auto; }
+.alert-list::-webkit-scrollbar { width: 4px; }
+.alert-list::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+.alert { display: flex; gap: 0.6rem; padding: 0.65rem 0.85rem; border-radius: 10px; border: 1px solid; font-size: 0.72rem; line-height: 1.5; font-weight: 600; }
+.alert b { font-weight: 900; }
+.alert-red    { background: #FFF1F2; border-color: #FECDD3; color: #9F1239; }
+.alert-yellow { background: #FFFBEB; border-color: #FDE68A; color: #92400E; }
+.alert-green  { background: #F0FDF4; border-color: #BBF7D0; color: #14532D; }
+.alert-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.alert-dot-red    { background: #EF4444; }
+.alert-dot-yellow { background: #F59E0B; }
+.alert-dot-green  { background: #10B981; }
+
+/* SHARE CELL */
+.share-cell { display: flex; align-items: center; gap: 0.5rem; justify-content: flex-end; }
+.share-bar { width: 60px; height: 6px; background: #F1F5F9; border-radius: 99px; overflow: hidden; flex-shrink: 0; }
+.share-bar > div { height: 100%; background: #0EA5E9; border-radius: 99px; }
+.share-val { font-size: 0.7rem; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--accent); }
+.share-delta { font-size: 0.62rem; font-weight: 800; }
+.share-delta.up { color: #059669; }
+.share-delta.down { color: #DC2626; }
+
+/* EMPTY */
+.empty-state { padding: 3rem 1rem; text-align: center; color: var(--muted); font-size: 0.85rem; font-weight: 600; }
+.empty-inline { font-size: 0.7rem; color: #94A3B8; text-align: center; padding: 0.5rem; font-weight: 600; }
+
+/* MODAL */
+.modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1.5rem; }
+.modal-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); }
+.modal-card { position: relative; background: #fff; border-radius: 18px; max-width: 900px; width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; animation: modalIn 0.2s ease-out; }
+@keyframes modalIn { from { opacity: 0; transform: scale(0.96) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.modal-head { display: flex; align-items: flex-start; justify-content: space-between; padding: 1.25rem 1.5rem; border-bottom: 1px solid var(--border); }
+.modal-head h3 { font-size: 1rem; font-weight: 900; color: var(--accent); }
+.modal-sub { font-size: 0.7rem; color: var(--muted); margin-top: 0.2rem; }
+.modal-close { background: none; border: none; padding: 0.4rem; border-radius: 8px; cursor: pointer; color: var(--muted); transition: all 0.15s ease; }
+.modal-close:hover { background: #F1F5F9; color: var(--accent); }
+.modal-close i { width: 18px; height: 18px; display: block; }
+.modal-body { padding: 1.25rem 1.5rem; overflow: auto; }
+.modal-label { font-size: 0.6rem; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.5rem; }
+.modal-formula { font-family: 'SF Mono', 'Courier New', monospace; font-size: 0.78rem; color: #334155; background: #F8FAFC; border: 1px solid var(--border); border-radius: 10px; padding: 0.9rem 1rem; margin-bottom: 1rem; line-height: 1.6; }
+.modal-table-wrap { overflow: auto; max-height: 50vh; border-radius: 10px; border: 1px solid var(--border); }
+.audit-table { width: 100%; font-size: 0.78rem; border-collapse: collapse; }
+.audit-table th { position: sticky; top: 0; background: #F8FAFC; padding: 0.7rem 1rem; text-align: left; font-size: 0.6rem; font-weight: 900; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; border-bottom: 1px solid var(--border); }
+.audit-table th.align-r, .audit-table td.align-r { text-align: right; }
+.audit-table td { padding: 0.6rem 1rem; border-bottom: 1px solid #F1F5F9; }
+.audit-table tbody tr:nth-child(even) { background: #FAFBFC; }
+.audit-table tbody tr:hover { background: #EFF6FF; }
+
+/* RESPONSIVE */
+@media (max-width: 900px) { .app-header { flex-wrap: wrap; } .header-period { display: none; } .sidebar { width: 200px; } }
+@media (max-width: 700px) { .view { flex-direction: column; } .sidebar { width: 100%; height: auto; position: static; } .team-tab { padding: 0.5rem 0.75rem; font-size: 0.7rem; } .brand-name { display: none; } }
+</style>
+</head>
+<body>
+
+<div id="splash" class="splash">
+  <div class="splash-card">
+    <div class="splash-logo"><i data-lucide="trending-up"></i></div>
+    <h1 class="splash-title">Análisis de Ventas</h1>
+    <p class="splash-sub">by Desarrollo MP Sala</p>
+    <div class="splash-progress"><div class="splash-bar"></div></div>
+    <p id="splash-status" class="splash-status">Cargando datos...</p>
+    <p class="splash-hint">Actualizado diariamente</p>
+  </div>
+</div>
+
+<div id="app" class="app hidden">
+  <header class="app-header">
+    <div class="brand">
+      <div class="brand-logo"><i data-lucide="trending-up"></i></div>
+      <div>
+        <p class="brand-name">Análisis de Ventas</p>
+        <p class="brand-sub">by Desarrollo MP Sala</p>
+      </div>
+    </div>
+    <div class="team-tabs">
+      <button data-team="ale" class="team-tab team-tab-ale"><span>✈️</span> TEAM ALE</button>
+      <button data-team="nati" class="team-tab team-tab-nati"><span>🌟</span> TEAM NATI</button>
+    </div>
+    <p id="header-period" class="header-period">—</p>
+  </header>
+
+  <div id="view-nati" class="view hidden">
+    <aside class="sidebar">
+      <div class="sidebar-section">
+        <p class="sidebar-title">Filtros</p>
+        <label class="field"><span>Año</span><select id="nati-year" class="filter-select"></select></label>
+        <label class="field"><span>Mes</span><select id="nati-month" class="filter-select"></select></label>
+        <label class="field"><span>Categoría</span><select id="nati-category" class="filter-select"></select></label>
+        <label class="field"><span>Marca</span><select id="nati-brand" class="filter-select"></select></label>
+        <div class="field-mp">
+          <label class="field">
+            <span><i data-lucide="shield-check" class="inline-icon"></i> Filtro MP</span>
+            <select id="nati-mp" class="filter-select">
+              <option value="all">Todas las marcas (Mix)</option>
+              <option value="only">Solo Marca Propia (MP)</option>
+            </select>
+          </label>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <p class="sidebar-title">Gráfico</p>
+        <label class="field"><span>Vista</span>
+          <select id="nati-chart-mode" class="filter-select">
+            <option value="units">Unidades</option>
+            <option value="variation">Variación %</option>
+          </select>
+        </label>
+      </div>
+      <div class="sidebar-section sidebar-footer">
+        <p id="nati-period" class="period-text">—</p>
+      </div>
+      <div class="sidebar-actions">
+        <button id="btn-export-nati" class="btn-primary"><i data-lucide="download"></i> Exportar Análisis</button>
+        <button id="btn-export-nati-leaders" class="btn-secondary"><i data-lucide="award"></i> Exportar Base</button>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div id="nati-content" class="content">
+        <div id="nati-kpi" class="kpi-grid kpi-grid-6"></div>
+
+        <div class="grid-2-1">
+          <div class="card">
+            <div class="card-head">
+              <div class="card-icon card-icon-blue"><i data-lucide="activity"></i></div>
+              <div>
+                <h3 class="card-title">Evolución Mensual</h3>
+                <p class="card-sub" id="nati-chart-subtitle">—</p>
+              </div>
+              <div class="chart-legend" id="nati-chart-legend"></div>
+            </div>
+            <div class="chart-wrap" style="height:300px"><canvas id="nati-trend"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div class="card-icon card-icon-violet"><i data-lucide="pie-chart"></i></div>
+              <h3 class="card-title">Composición</h3>
+            </div>
+            <div class="chart-wrap" style="min-height:260px"><canvas id="nati-doughnut"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid-2-1">
+          <div class="card">
+            <div class="card-head">
+              <div class="card-icon card-icon-emerald"><i data-lucide="bar-chart"></i></div>
+              <h3 class="card-title">Comparativa YoY Mensual</h3>
+            </div>
+            <div class="chart-wrap" style="min-height:260px"><canvas id="nati-yoy"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div class="card-icon card-icon-amber"><i data-lucide="filter"></i></div>
+              <h3 class="card-title">Concentración 80/20</h3>
+            </div>
+            <div class="chart-wrap" style="min-height:220px"><canvas id="nati-pareto"></canvas></div>
+            <p class="card-insight" id="nati-pareto-insight"></p>
+          </div>
+        </div>
+
+        <div class="grid-2-1">
+          <div class="card">
+            <div class="card-head">
+              <div class="card-icon card-icon-violet"><i data-lucide="trophy"></i></div>
+              <h3 class="card-title">Top 10 Productos</h3>
+              <div class="cat-leader" id="nati-cat-leader"></div>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead><tr>
+                  <th class="w-8">#</th>
+                  <th>Producto</th>
+                  <th>Categoría</th>
+                  <th id="nati-th-top-total" class="align-r">Total</th>
+                  <th id="nati-th-top-var" class="align-r">Var. YTD</th>
+                </tr></thead>
+                <tbody id="nati-top-products"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div class="card-icon card-icon-amber"><i data-lucide="zap"></i></div>
+              <h3 class="card-title">Insights Clave</h3>
+            </div>
+            <ul id="nati-insights" class="insights-list"></ul>
+            <div class="card-divider"></div>
+            <ul id="nati-recommendations" class="rec-list"></ul>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-icon card-icon-blue"><i data-lucide="crown"></i></div>
+            <h3 class="card-title">Ranking de Marcas</h3>
+          </div>
+          <div class="chart-wrap" style="height:340px"><canvas id="nati-brands"></canvas></div>
+        </div>
+
+        <div class="card card-highlight">
+          <div class="card-head">
+            <div class="card-icon card-icon-blue"><i data-lucide="shield-check"></i></div>
+            <h3 class="card-title">Análisis Comparativo: Marca Propia vs Resto</h3>
+          </div>
+          <div id="nati-mp-panel" class="mp-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <div class="card-icon card-icon-slate"><i data-lucide="list-ordered"></i></div>
+            <h3 class="card-title">Ranking Completo de Portafolio</h3>
+            <div class="card-search">
+              <i data-lucide="search"></i>
+              <input type="text" id="nati-search" placeholder="Buscar producto...">
+            </div>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead><tr>
+                <th class="w-8">#</th>
+                <th>Artículo</th>
+                <th>Categoría</th>
+                <th id="nati-th-full-total" class="align-r">Total</th>
+                <th class="align-r">Prom. Mes</th>
+                <th id="nati-th-full-var" class="align-r">Var. YTD</th>
+                <th class="align-c">Estado</th>
+                <th class="align-c">Mix %</th>
+              </tr></thead>
+              <tbody id="nati-full-ranking"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="spacer-bottom"></div>
+    </main>
+  </div>
+
+  <div id="view-ale" class="hidden">
+    <div id="ale-selector" class="ale-selector-screen">
+      <div class="ale-selector-card">
+        <div class="ale-selector-head">
+          <div class="ale-selector-icon"><i data-lucide="compass"></i></div>
+          <p class="ale-selector-eyebrow">Team Ale</p>
+          <h2 class="ale-selector-title">¿Qué deseas analizar?</h2>
+          <p class="ale-selector-help">Elige la categoría o marca que quieres revisar</p>
+        </div>
+        <div class="ale-selector-search-wrap">
+          <i data-lucide="search"></i>
+          <input id="ale-selector-input" type="text" placeholder="Buscar categoría o marca..." autocomplete="off">
+          <div id="ale-selector-dropdown" class="ale-selector-dropdown hidden"></div>
+        </div>
+        <div class="ale-selector-divider"><span>o</span></div>
+        <button id="ale-open-general" class="btn-ale">
+          <i data-lucide="bar-chart-3"></i> Ver Dashboard General
+        </button>
+      </div>
+    </div>
+
+    <div id="ale-dashboard" class="view hidden">
+      <aside class="sidebar ale-sidebar">
+        <div class="sidebar-section">
+          <p class="sidebar-title">Modo</p>
+          <div class="ale-mode-group">
+            <button id="ale-mode-units" class="ale-mode-btn active"><i data-lucide="package"></i> UNIDADES</button>
+            <button id="ale-mode-bs" class="ale-mode-btn"><i data-lucide="banknote"></i> BS VENDIDOS</button>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-title-row">
+            <p class="sidebar-title">Filtros</p>
+            <button id="ale-reset" class="link-btn">↺ Restablecer</button>
+          </div>
+          <label class="field"><span>Año</span><select id="ale-year" class="filter-select"></select></label>
+          <label class="field"><span>Mes</span><select id="ale-month" class="filter-select"></select></label>
+          <label class="field"><span>Marca</span><select id="ale-brand" class="filter-select"></select></label>
+          <label class="field"><span>Categoría</span><select id="ale-category" class="filter-select"></select></label>
+          <label class="field"><span>Tipo Negocio</span><select id="ale-tipo" class="filter-select"></select></label>
+          <label class="field"><span>SKU / Producto</span><input id="ale-sku" type="text" placeholder="Buscar SKU..." class="filter-select"></label>
+        </div>
+        <div class="sidebar-actions">
+          <button id="ale-export" class="btn-ale"><i data-lucide="download"></i> Exportar Base</button>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div id="ale-content" class="content">
+          <div class="context-bar">
+            <button id="ale-back" class="back-btn"><i data-lucide="arrow-left"></i> Cambiar análisis</button>
+            <span id="ale-context-label" class="context-badge"></span>
+          </div>
+          <div class="card ale-exec-card">
+            <div class="card-head">
+              <div class="card-icon card-icon-sky"><i data-lucide="file-text"></i></div>
+              <h3 class="card-title">Resumen Ejecutivo</h3>
+              <span id="ale-exec-period" class="chip chip-sky"></span>
+            </div>
+            <p id="ale-exec-summary" class="exec-text"></p>
+          </div>
+          <div id="ale-kpi" class="kpi-grid kpi-grid-6"></div>
+          <div class="card">
+            <div class="card-head">
+              <div class="card-icon card-icon-sky"><i data-lucide="bar-chart-2"></i></div>
+              <div>
+                <h3 class="card-title">Comparativa YoY Mensual</h3>
+                <p class="card-sub" id="ale-chart-subtitle">—</p>
+              </div>
+            </div>
+            <div class="chart-wrap" style="height:420px"><canvas id="ale-trend"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div class="card-icon card-icon-violet"><i data-lucide="list-ordered"></i></div>
+              <h3 class="card-title">Ranking de Marcas</h3>
+              <div class="card-head-right">
+                <span class="label-inline">Ordenar:</span>
+                <select id="ale-brand-sort" class="mini-select">
+                  <option value="total">Mayor Venta</option>
+                  <option value="growth">Mayor Crecimiento</option>
+                  <option value="decline">Mayor Caída</option>
+                  <option value="share">Mayor Participación</option>
+                  <option value="share-loss">Mayor Pérdida</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead><tr>
+                  <th class="w-8">#</th>
+                  <th id="ale-th-brand-name">Marca</th>
+                  <th id="ale-th-brand-tipo">Tipo</th>
+                  <th class="align-r">Venta Actual</th>
+                  <th class="align-r">Período Ant.</th>
+                  <th class="align-r">Variación</th>
+                  <th class="align-r">Participación</th>
+                  <th class="align-c">Tendencia</th>
+                </tr></thead>
+                <tbody id="ale-brand-ranking"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="grid-3">
+            <div class="card">
+              <div class="card-head">
+                <div class="card-icon card-icon-emerald"><i data-lucide="trending-up"></i></div>
+                <h3 class="card-title" id="ale-top5-title">Top 5</h3>
+              </div>
+              <div class="rank-list" id="ale-top5"></div>
+              <div class="card-divider"></div>
+              <p class="mini-title">Por Crecimiento</p>
+              <div class="rank-list" id="ale-top5-growth"></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div class="card-icon card-icon-red"><i data-lucide="trending-down"></i></div>
+                <h3 class="card-title" id="ale-bottom5-title">Bottom 5</h3>
+              </div>
+              <div class="rank-list" id="ale-bottom5"></div>
+              <div class="card-divider"></div>
+              <p class="mini-title">Mayor Caída</p>
+              <div class="rank-list" id="ale-bottom5-decline"></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <div class="card-icon card-icon-amber"><i data-lucide="bell"></i></div>
+                <h3 class="card-title">Alertas Comerciales</h3>
+              </div>
+              <div id="ale-alerts" class="alert-list"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <div class="card-icon card-icon-violet"><i data-lucide="list-ordered"></i></div>
+              <h3 class="card-title">Ranking Completo</h3>
+              <div class="card-search">
+                <i data-lucide="search"></i>
+                <input type="text" id="ale-search" placeholder="Buscar producto...">
+              </div>
+            </div>
+            <div class="table-scroll">
+              <table class="data-table">
+                <thead><tr>
+                  <th class="w-8">#</th>
+                  <th>Artículo</th>
+                  <th>Categoría</th>
+                  <th id="ale-th-full-total" class="align-r">Total</th>
+                  <th class="align-r">Prom. Mes</th>
+                  <th id="ale-th-full-var" class="align-r">Var. YTD</th>
+                  <th class="align-c">Estado</th>
+                  <th class="align-c">Mix %</th>
+                </tr></thead>
+                <tbody id="ale-full-ranking"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="spacer-bottom"></div>
+      </main>
+    </div>
+  </div>
+</div>
+
+<div id="audit-modal" class="modal hidden">
+  <div class="modal-backdrop" data-close></div>
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h3 id="audit-title">Auditoría</h3>
+        <p class="modal-sub">Desglose de los datos utilizados</p>
+      </div>
+      <button class="modal-close" data-close><i data-lucide="x"></i></button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-label">Método de cálculo</p>
+      <div id="audit-formula" class="modal-formula"></div>
+      <div class="modal-table-wrap">
+        <table class="audit-table">
+          <thead><tr id="audit-thead"></tr></thead>
+          <tbody id="audit-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+var MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+var MESES_SHORT = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+var $  = function(sel, root){ return (root || document).querySelector(sel); };
+var $$ = function(sel, root){ return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
+
+function safeLucide(){
+  if (window.lucide && typeof window.lucide.createIcons === 'function') {
+    try { window.lucide.createIcons(); } catch(e) {}
+  }
+}
+function nf(n){ return Number(n || 0).toLocaleString('es-ES'); }
+function fmtPct(v, d){ d = d == null ? 1 : d; return v == null ? 'N/D' : (v >= 0 ? '+' : '') + v.toFixed(d) + '%'; }
+function fmtTickShort(v){
+  if (v >= 1e6) return (v/1e6).toFixed(1) + 'M';
+  if (v >= 1e3) return (v/1e3).toFixed(0) + 'K';
+  return v;
+}
+function escapeHtml(s){
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(ch){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];
+  });
+}
+function debounce(fn, ms){
+  var t;
+  return function(){
+    var a = arguments, c = this;
+    clearTimeout(t);
+    t = setTimeout(function(){ fn.apply(c, a); }, ms);
+  };
+}
+
+/* PARSERS */
+function normalizeNumber(val){
+  if (typeof val === 'number') return val;
+  if (!val || typeof val !== 'string') return 0;
+  var s = val.trim();
+  if (s.indexOf('.') !== -1 && s.indexOf(',') === -1) {
+    var p = s.split('.');
+    if (p.length > 1 && p[p.length-1].length === 3) s = s.replace(/\./g,'');
+  }
+  var n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+function isMonthColumn(c){
+  if (!c || typeof c !== 'string') return false;
+  var lc = c.toLowerCase();
+  return MESES.some(function(m){ return lc.indexOf(m.toLowerCase()) !== -1; });
+}
+function extractMonthYear(c, fy){
+  var fm = -1;
+  for (var i = 0; i < MESES.length; i++) {
+    if (c.toLowerCase().indexOf(MESES[i].toLowerCase()) !== -1) { fm = i; break; }
+  }
+  var y = fy || new Date().getFullYear();
+  var m = c.match(/\b(20\d{2})\b/);
+  if (m) y = parseInt(m[1]);
+  return { month: fm, year: y };
+}
+function guessBrand(a){
+  if (!a) return 'Desconocida';
+  var p = String(a).toUpperCase().split(/\s+/);
+  var generics = ['AGUA','PAN','CAFE','CAFÉ','CERVEZA','LECHE','JUGO','GALLETAS','CHOCOLATE','BEBIDA','GASEOSA','REFRESCO','VINO','LICOR','BOTELLA','LATA','PACK','CAJA','BOLSA','SIX','DOCENA','FRANCES','MARRAQUETA','DE','MESA','HORNEADO','S/GAS','C/GAS','SABORIZADA','UHT','NATURAL'];
+  var i = 0;
+  while (i < p.length && generics.indexOf(p[i]) !== -1) i++;
+  if (i >= p.length) return 'SIN MARCA';
+  var brand = p[i];
+  var prefixes = ['LA','EL','LOS','LAS','DEL','SAN','SANTA','DON','DOÑA'];
+  if (prefixes.indexOf(brand) !== -1 && i+1 < p.length) brand = brand + ' ' + p[i+1];
+  if (brand === 'COCA' && p[i+1] === 'COLA') brand = 'COCA COLA';
+  if (brand === 'BON' && p[i+1] === 'PAIN') brand = 'BON PAIN';
+  if (brand === 'RED' && p[i+1] === 'BULL') brand = 'RED BULL';
+  if (brand === 'CHIQUI' && p[i+1] === 'CHOC') brand = 'CHIQUI CHOC';
+  if (brand === 'VILLA' && p[i+1] === 'SANTA') brand = 'VILLA SANTA';
+  return brand;
+}
+function isMarcaPropia(name){
+  if (!name) return false;
+  var l = String(name).toLowerCase();
+  return l.indexOf('basix') !== -1 || l.indexOf('amarket') !== -1 || l.indexOf('bon pain') !== -1;
+}
+function findHeaderRow(matrix){
+  for (var i = 0; i < Math.min(15, matrix.length); i++) {
+    for (var j = 0; j < matrix[i].length; j++) {
+      var c = matrix[i][j];
+      if (typeof c === 'string' && (c.toLowerCase().indexOf('articulo') !== -1 || c.toLowerCase().indexOf('artículo') !== -1)) return i;
+    }
+  }
+  return 0;
+}
+function computeColumnYears(matrix, hIdx, headers){
+  var colYears = [];
+  var cy = new Date().getFullYear();
+  for (var col = 0; col < headers.length; col++) {
+    var yf = null;
+    for (var r = 0; r < hIdx; r++) {
+      var v = String(matrix[r][col] || '').trim();
+      var m = v.match(/\b(20\d{2})\b/);
+      if (m) { yf = parseInt(m[1]); break; }
+    }
+    if (yf) cy = yf;
+    colYears[col] = cy;
+  }
+  return colYears;
+}
+function parseNatiSheet(matrix){
+  if (matrix.length < 2) return [];
+  var hIdx = findHeaderRow(matrix);
+  var headers = matrix[hIdx].map(function(h){ return String(h).trim(); });
+  var colYears = computeColumnYears(matrix, hIdx, headers);
+
+  var artIdx = -1, marcaIdx = -1, cat3Idx = -1, tipoIdx = -1;
+  for (var i = 0; i < headers.length; i++) {
+    var h = headers[i], hl = h.toLowerCase(), hu = h.toUpperCase();
+    if (artIdx === -1 && (hl.indexOf('articulo') !== -1 || hl.indexOf('artículo') !== -1)) artIdx = i;
+    if (marcaIdx === -1 && hu === 'MARCA') marcaIdx = i;
+    if (cat3Idx === -1 && hu === 'CAT 3') cat3Idx = i;
+    if (tipoIdx === -1 && (hu.indexOf('TIPO_NEGOCIO_1') !== -1 || hu === 'TIPO_NEGOCIO')) tipoIdx = i;
+  }
+  var mc = [];
+  headers.forEach(function(h, idx){
+    if (isMonthColumn(h)) { var ey = extractMonthYear(h, colYears[idx]); mc.push({ idx: idx, month: ey.month, year: ey.year }); }
+  });
+
+  var result = [];
+  for (var r = hIdx + 1; r < matrix.length; r++) {
+    var row = matrix[r];
+    var art = row[artIdx >= 0 ? artIdx : 1];
+    if (!art || String(art).toLowerCase().indexOf('total') !== -1) continue;
+    var brand = marcaIdx >= 0 && row[marcaIdx] ? String(row[marcaIdx]).trim().toUpperCase() : guessBrand(String(art));
+    var cat = cat3Idx >= 0 && row[cat3Idx] ? String(row[cat3Idx]).trim() : 'Sin Categoría';
+    var tipo = tipoIdx >= 0 && row[tipoIdx] ? String(row[tipoIdx]).trim() : '';
+    var isMP = tipo.toLowerCase().indexOf('propia') !== -1 || isMarcaPropia(String(art));
+    mc.forEach(function(col){
+      var us = row[col.idx];
+      var units = (us === '' || us == null) ? 0 : normalizeNumber(us);
+      result.push({
+        article: String(art).trim(), category: cat, brand: brand, tipo: tipo,
+        year: col.year, month: col.month, monthName: MESES[col.month],
+        units: units, isMP: isMP
+      });
+    });
+  }
+  return result;
+}
+function parseAleSheet(matrix){
+  if (matrix.length < 2) return [];
+  var hIdx = findHeaderRow(matrix);
+  var headers = matrix[hIdx].map(function(h){ return String(h).trim(); });
+  var colYears = computeColumnYears(matrix, hIdx, headers);
+
+  var artIdx = -1, marcaRawIdx = -1, tipoRawIdx = -1, cat3Idx = -1;
+  for (var i = 0; i < headers.length; i++) {
+    var h = headers[i], hl = h.toLowerCase(), hu = h.toUpperCase();
+    if (artIdx === -1 && (hl.indexOf('articulo') !== -1 || hl.indexOf('artículo') !== -1)) artIdx = i;
+    if (marcaRawIdx === -1 && hu === 'MARCA') marcaRawIdx = i;
+    if (tipoRawIdx === -1 && hu === 'TIPO_NEGOCIO_2') tipoRawIdx = i;
+    if (cat3Idx === -1 && hu === 'CAT 3') cat3Idx = i;
+  }
+
+  var businessTypes = ['marca propia','franquicia','marca propia adoptada','representaciones'];
+  var marcaIdx = marcaRawIdx, tipoIdx = tipoRawIdx;
+  if (marcaRawIdx >= 0 && tipoRawIdx >= 0) {
+    var mh = 0, th = 0;
+    var end = Math.min(matrix.length, hIdx + 30);
+    for (var k = hIdx + 1; k < end; k++) {
+      var rr = matrix[k]; if (!rr) continue;
+      var mv = String(rr[marcaRawIdx] || '').trim().toLowerCase();
+      var tv = String(rr[tipoRawIdx] || '').trim().toLowerCase();
+      if (businessTypes.indexOf(mv) !== -1) mh++;
+      if (businessTypes.indexOf(tv) !== -1) th++;
+    }
+    if (mh > th) { marcaIdx = tipoRawIdx; tipoIdx = marcaRawIdx; }
+  }
+
+  var mc = [];
+  headers.forEach(function(h, idx){
+    if (isMonthColumn(h)) { var ey = extractMonthYear(h, colYears[idx]); mc.push({ idx: idx, month: ey.month, year: ey.year }); }
+  });
+
+  var result = [];
+  for (var r = hIdx + 1; r < matrix.length; r++) {
+    var row = matrix[r];
+    var art = row[artIdx >= 0 ? artIdx : 1];
+    if (!art || String(art).toLowerCase().indexOf('total') !== -1) continue;
+    var brand = marcaIdx >= 0 && row[marcaIdx] ? String(row[marcaIdx]).trim().toUpperCase() : 'SIN MARCA';
+    var tipo = tipoIdx >= 0 && row[tipoIdx] ? String(row[tipoIdx]).trim() : '';
+    var cat = cat3Idx >= 0 && row[cat3Idx] ? String(row[cat3Idx]).trim() : 'Sin Categoría';
+    mc.forEach(function(col){
+      var us = row[col.idx];
+      var units = (us === '' || us == null) ? 0 : normalizeNumber(us);
+      result.push({
+        article: String(art).trim(), category: cat, brand: brand, tipo: tipo,
+        year: col.year, month: col.month, monthName: MESES[col.month], units: units
+      });
+    });
+  }
+  return result;
+}
+
+/* STATE */
+var State = {
+  activeTeam: null,
+  nati: {
+    data: [],
+    filters: { year: 'all', month: 'all', category: 'all', brand: 'all', mp: 'all' },
+    chartMode: 'units'
+  },
+  ale: {
+    mode: 'units',
+    view: 'selector',
+    context: null,
+    dataUnits: [],
+    dataBs: [],
+    filters: { year: 'all', month: 'all', brand: 'all', category: 'all', tipo: 'all', sku: '' }
+  }
+};
+var Charts = {};
+function destroyChart(id){ if (Charts[id]) { try { Charts[id].destroy(); } catch(e){} delete Charts[id]; } }
+function setChart(id, config){
+  destroyChart(id);
+  var canvas = document.getElementById(id);
+  if (!canvas) return null;
+  try { Charts[id] = new Chart(canvas.getContext('2d'), config); } catch(e) { console.error('[chart] ' + id, e); }
+  return Charts[id];
+}
+
+/* SELECTORS */
+function selectNatiData(includePrevYear){
+  var d = State.nati.data, f = State.nati.filters;
+  var yActive = f.year !== 'all';
+  var yNum = yActive ? parseInt(f.year, 10) : null;
+  var yPrev = yActive ? yNum - 1 : null;
+  var out = [];
+  for (var i = 0; i < d.length; i++) {
+    var r = d[i];
+    if (f.month !== 'all' && r.monthName !== f.month) continue;
+    if (f.category !== 'all' && r.category !== f.category) continue;
+    if (f.brand !== 'all' && r.brand !== f.brand) continue;
+    if (f.mp === 'only' && !r.isMP) continue;
+    if (yActive) {
+      if (includePrevYear) { if (r.year !== yNum && r.year !== yPrev) continue; }
+      else { if (r.year !== yNum) continue; }
+    }
+    out.push(r);
+  }
+  return out;
+}
+function getAleRawData(){ return State.ale.mode === 'units' ? State.ale.dataUnits : State.ale.dataBs; }
+function selectAleData(){
+  var d = getAleRawData(), f = State.ale.filters;
+  var skuLower = f.sku ? f.sku.toLowerCase().trim() : '';
+  return d.filter(function(r){
+    if (f.year !== 'all' && String(r.year) !== f.year) return false;
+    if (f.month !== 'all' && r.monthName !== f.month) return false;
+    if (f.brand !== 'all' && r.brand !== f.brand) return false;
+    if (f.category !== 'all' && r.category !== f.category) return false;
+    if (f.tipo !== 'all' && r.tipo !== f.tipo) return false;
+    if (skuLower && r.article.toLowerCase().indexOf(skuLower) === -1) return false;
+    return true;
+  });
+}
+
+/* ANALYTICS */
+function detectPeriod(data){
+  var years = [];
+  var seen = {};
+  data.forEach(function(d){ if (!seen[d.year]) { seen[d.year] = 1; years.push(d.year); } });
+  years.sort(function(a,b){ return a-b; });
+  var lastYear = years[years.length - 1];
+  var prevYear = years.length > 1 ? years[years.length - 2] : null;
+  var lastActive = data.filter(function(d){ return d.year === lastYear && d.units > 0; });
+  var maxMonth = lastActive.length > 0 ? Math.max.apply(null, lastActive.map(function(d){ return d.month; })) : 11;
+  return { years: years, lastYear: lastYear, prevYear: prevYear, maxMonth: maxMonth, monthsElapsed: maxMonth + 1 };
+}
+function computeNatiAnalytics(data){
+  var p = detectPeriod(data);
+  var lastYear = p.lastYear, prevYear = p.prevYear, maxMonth = p.maxMonth, monthsElapsed = p.monthsElapsed;
+
+  var skuMap = {};
+  data.forEach(function(d){
+    if (!skuMap[d.article]) {
+      skuMap[d.article] = {
+        article: d.article, category: d.category, brand: d.brand,
+        total: 0, ytdLast: 0, ytdPrev: 0,
+        lastSaleYear: 0, lastSaleMonth: -1,
+        monthlyLast: [0,0,0,0,0,0,0,0,0,0,0,0]
+      };
+    }
+    var s = skuMap[d.article];
+    s.total += d.units;
+    if (d.month <= maxMonth) {
+      if (d.year === lastYear) { s.ytdLast += d.units; s.monthlyLast[d.month] += d.units; }
+      if (prevYear && d.year === prevYear) s.ytdPrev += d.units;
+    }
+    if (d.units > 0) {
+      var newer = d.year > s.lastSaleYear || (d.year === s.lastSaleYear && d.month > s.lastSaleMonth);
+      if (newer) { s.lastSaleYear = d.year; s.lastSaleMonth = d.month; }
+    }
+  });
+
+  var skus = Object.keys(skuMap).map(function(k){ return skuMap[k]; });
+  var totalLast = 0, totalPrev = 0;
+  skus.forEach(function(s){ totalLast += s.ytdLast; totalPrev += s.ytdPrev; });
+
+  skus.forEach(function(s){
+    s.varAbs = s.ytdLast - s.ytdPrev;
+    s.ytdVar = s.ytdPrev > 0 ? ((s.ytdLast / s.ytdPrev) - 1) * 100 : (s.ytdLast > 0 ? null : -100);
+    s.shareLast = totalLast > 0 ? (s.ytdLast / totalLast) * 100 : 0;
+    s.sharePrev = totalPrev > 0 ? (s.ytdPrev / totalPrev) * 100 : 0;
+    s.shareDelta = s.shareLast - s.sharePrev;
+    s.runRate = monthsElapsed > 0 ? (s.ytdLast / monthsElapsed) * 12 : 0;
+    var n = monthsElapsed;
+    var sX=0, sY=0, sXY=0, sX2=0;
+    for (var i = 0; i < n; i++) { sX+=i; sY+=s.monthlyLast[i]; sXY+=i*s.monthlyLast[i]; sX2+=i*i; }
+    var denom = (n*sX2 - sX*sX);
+    s.trend = denom !== 0 ? (n*sXY - sX*sY) / denom : 0;
+    if (s.ytdVar === null) s.classification = 'Nuevo';
+    else if (s.ytdVar >= 20) s.classification = 'Crecimiento';
+    else if (s.ytdVar >= -5) s.classification = 'Estable';
+    else if (s.ytdVar >= -30) s.classification = 'Declive moderado';
+    else s.classification = 'Declive severo';
+  });
+
+  var skusSorted = skus.slice().sort(function(a,b){ return b.ytdLast - a.ytdLast; });
+  var acc = 0, s80 = 0;
+  for (var si = 0; si < skusSorted.length; si++) {
+    acc += skusSorted[si].ytdLast; s80++;
+    if (totalLast > 0 && acc / totalLast >= 0.8) break;
+  }
+  var pct80 = skus.length > 0 ? ((s80 / skus.length) * 100).toFixed(1) : '0.0';
+  var globalVar = totalPrev > 0 ? ((totalLast / totalPrev) - 1) * 100 : null;
+  var globalVarAbs = totalLast - totalPrev;
+  var globalRunRate = monthsElapsed > 0 ? (totalLast / monthsElapsed) * 12 : 0;
+
+  var mTot = [0,0,0,0,0,0,0,0,0,0,0,0];
+  data.forEach(function(d){ if (d.year === lastYear) mTot[d.month] += d.units; });
+  var bIdx = 0, wIdx = 0;
+  for (var mi = 0; mi < monthsElapsed; mi++) {
+    if (mTot[mi] > mTot[bIdx]) bIdx = mi;
+    if (mTot[mi] < mTot[wIdx]) wIdx = mi;
+  }
+
+  var catMap = {};
+  skus.forEach(function(s){
+    if (!catMap[s.category]) catMap[s.category] = { category: s.category, total:0, ytdLast:0, ytdPrev:0, varAbs:0, monthlyLast: [0,0,0,0,0,0,0,0,0,0,0,0] };
+    var c = catMap[s.category];
+    c.total += s.total; c.ytdLast += s.ytdLast; c.ytdPrev += s.ytdPrev; c.varAbs += s.varAbs;
+    for (var i = 0; i < 12; i++) c.monthlyLast[i] += s.monthlyLast[i];
+  });
+  var cats = Object.keys(catMap).map(function(k){ return catMap[k]; }).map(function(c){
+    c.ytdVar = c.ytdPrev > 0 ? ((c.ytdLast / c.ytdPrev) - 1) * 100 : null;
+    c.share = totalLast > 0 ? (c.ytdLast / totalLast) * 100 : 0;
+    var n = monthsElapsed;
+    var sX=0, sY=0, sXY=0, sX2=0;
+    for (var i = 0; i < n; i++) { sX+=i; sY+=c.monthlyLast[i]; sXY+=i*c.monthlyLast[i]; sX2+=i*i; }
+    var denom = (n*sX2 - sX*sX);
+    c.trend = denom !== 0 ? (n*sXY - sX*sY) / denom : 0;
+    return c;
+  }).sort(function(a,b){ return b.ytdLast - a.ytdLast; });
+
+  var insights = [];
+  if (globalVar !== null) {
+    insights.push({
+      tipo: 'Global',
+      titulo: (globalVar >= 0 ? '🚀' : '⚠️') + ' Tendencia de Portafolio',
+      texto: 'Las ventas muestran un ' + (globalVar >= 0 ? 'crecimiento' : 'contracción') + ' del ' + Math.abs(globalVar).toFixed(1) + '% (' + (globalVarAbs>=0?'+':'') + nf(globalVarAbs) + ' unidades). Proyección de cierre: ' + nf(Math.round(globalRunRate)) + ' unidades. Mejor mes: ' + MESES[bIdx] + '.'
+    });
+  }
+  var drivers = skus.filter(function(s){ return s.varAbs > 0; }).sort(function(a,b){ return b.varAbs - a.varAbs; });
+  if (drivers.length > 0) {
+    var d1 = drivers[0];
+    insights.push({
+      tipo: 'Oportunidad',
+      titulo: '📈 Motor: ' + d1.article.slice(0,30),
+      texto: 'Impulsó el volumen con ' + nf(d1.varAbs) + ' unidades extra' + (d1.ytdVar ? ' (' + fmtPct(d1.ytdVar) + ')' : '') + '. Proteger inventario y replicar estrategia comercial.'
+    });
+  }
+  var bleeders = skus.filter(function(s){ return s.varAbs < 0; }).sort(function(a,b){ return a.varAbs - b.varAbs; });
+  if (bleeders.length > 0) {
+    var b1 = bleeders[0];
+    insights.push({
+      tipo: 'Alerta',
+      titulo: '🚨 Riesgo: ' + b1.article.slice(0,30),
+      texto: 'Perdió ' + nf(Math.abs(b1.varAbs)) + ' unidades (' + fmtPct(b1.ytdVar) + '). Investigar quiebre de stock, precio o pérdida de cliente.'
+    });
+  }
+  var catsGrowth = cats.filter(function(c){ return c.ytdVar !== null && c.ytdVar > 0; }).sort(function(a,b){ return b.varAbs - a.varAbs; });
+  if (catsGrowth.length > 0) {
+    var c1 = catsGrowth[0];
+    insights.push({
+      tipo: 'Estratégico',
+      titulo: '🎯 Mix: ' + c1.category,
+      texto: 'Categoría líder en expansión con ' + nf(c1.varAbs) + ' unidades adicionales. Tendencia ' + (c1.trend > 0 ? 'acelerada' : 'desacelerada') + '. Maximizar exhibición cruzada.'
+    });
+  }
+
+  return {
+    period: p, skus: skus, skusSorted: skusSorted, s80: s80, pct80: pct80,
+    totalLast: totalLast, totalPrev: totalPrev, globalVar: globalVar, globalVarAbs: globalVarAbs, globalRunRate: globalRunRate,
+    cats: cats, catsGrowth: catsGrowth, insights: insights,
+    bestMonth: MESES[bIdx], worstMonth: MESES[wIdx]
+  };
+}
+function computeAleEntityStats(data){
+  var fullPeriod = detectPeriod(getAleRawData());
+  var lastYear = fullPeriod.lastYear, prevYear = fullPeriod.prevYear, maxMonth = fullPeriod.maxMonth;
+  var brandFiltered = State.ale.filters.brand !== 'all';
+  var groupKey = brandFiltered ? 'article' : 'brand';
+
+  var map = {};
+  data.forEach(function(d){
+    var key = d[groupKey];
+    if (!key) return;
+    if (!map[key]) {
+      map[key] = { name: key, brand: d.brand, category: d.category, tipo: d.tipo, current: 0, previous: 0 };
+    }
+    var e = map[key];
+    if (d.year === lastYear && d.month <= maxMonth) e.current += d.units;
+    if (prevYear && d.year === prevYear && d.month <= maxMonth) e.previous += d.units;
+  });
+  var list = Object.keys(map).map(function(k){ return map[k]; }).filter(function(e){ return e.current > 0 || e.previous > 0; });
+  var totalCur = 0, totalPrev = 0;
+  list.forEach(function(e){ totalCur += e.current; totalPrev += e.previous; });
+  list.forEach(function(e){
+    e.share = totalCur > 0 ? (e.current / totalCur) * 100 : 0;
+    e.prevShare = totalPrev > 0 ? (e.previous / totalPrev) * 100 : 0;
+    e.shareDelta = e.share - e.prevShare;
+    e.varPct = e.previous > 0 ? ((e.current / e.previous) - 1) * 100 : (e.current > 0 ? null : 0);
+    e.varAbs = e.current - e.previous;
+  });
+  return { list: list, totalCur: totalCur, totalPrev: totalPrev, brandFiltered: brandFiltered, period: fullPeriod };
+}
+
+/* CHART DEFAULTS */
+var CHART_FONT = { family: 'Inter', size: 10.5, weight: '500' };
+var TOOLTIP_BASE = {
+  backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderWidth: 1,
+  titleColor: '#0F172A', bodyColor: '#475569',
+  cornerRadius: 10, padding: 12,
+  titleFont: { family: 'Inter', size: 12, weight: '700' },
+  bodyFont: { family: 'Inter', size: 11, weight: '500' }
+};
+
+/* RENDER NATI */
+function populateNatiFilters(){
+  var data = State.nati.data;
+  var years = [], cats = [], brands = [];
+  var seenY = {}, seenC = {}, seenB = {};
+  data.forEach(function(d){
+    if (!seenY[d.year]) { seenY[d.year] = 1; years.push(d.year); }
+    if (d.category && !seenC[d.category]) { seenC[d.category] = 1; cats.push(d.category); }
+    if (d.brand && !seenB[d.brand]) { seenB[d.brand] = 1; brands.push(d.brand); }
+  });
+  years.sort(function(a,b){ return a-b; });
+  cats.sort(); brands.sort();
+
+  var yearEl = $('#nati-year');
+  if (yearEl) yearEl.innerHTML = '<option value="all">Ambos años</option>' + years.map(function(y){ return '<option value="' + y + '">' + y + '</option>'; }).join('');
+
+  var monthsInData = MESES.filter(function(m){ return data.some(function(d){ return d.monthName === m; }); });
+  var monthEl = $('#nati-month');
+  if (monthEl) monthEl.innerHTML = '<option value="all">Todos</option>' + monthsInData.map(function(m){ return '<option value="' + m + '">' + m + '</option>'; }).join('');
+
+  var catEl = $('#nati-category');
+  if (catEl) catEl.innerHTML = '<option value="all">Todas</option>' + cats.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join('');
+
+  var brandEl = $('#nati-brand');
+  if (brandEl) brandEl.innerHTML = '<option value="all">Todas</option>' + brands.map(function(b){ return '<option value="' + escapeHtml(b) + '">' + escapeHtml(b) + '</option>'; }).join('');
+}
+
+function renderNati(){
+  var data = selectNatiData(true);
+  var content = $('#nati-content');
+  if (!content) return;
+  if (data.length === 0) {
+    content.innerHTML = '<div class="empty-state">No hay datos con los filtros actuales.</div>';
+    return;
+  }
+  var A = computeNatiAnalytics(data);
+  var p = A.period;
+  var periodTxt = MESES[0] + '–' + MESES[p.maxMonth] + ' ' + p.lastYear + (p.prevYear ? ' vs ' + p.prevYear : '');
+  var periodEl = $('#nati-period'); if (periodEl) periodEl.textContent = 'Datos acumulados: ' + periodTxt;
+  var hdrEl = $('#header-period'); if (hdrEl) hdrEl.textContent = periodTxt;
+
+  renderNatiKPIs(A, data);
+  renderNatiCharts(A, data);
+  renderNatiTables(A);
+  renderNatiInsights(A);
+  renderNatiMP(A, data);
+  safeLucide();
+}
+
+function renderNatiKPIs(A, data){
+  var p = A.period;
+  var isAllYears = State.nati.filters.year === 'all';
+  var skuSet = {};
+  A.skus.forEach(function(s){ if (s.ytdLast > 0 || s.total > 0) skuSet[s.article] = 1; });
+  var skusCount = Object.keys(skuSet).length;
+
+  var k1Title, k1Val, k1Sub;
+  if (isAllYears) {
+    k1Title = 'Ventas Totales Históricas';
+    var allTotal = 0; A.skus.forEach(function(s){ allTotal += s.total; });
+    k1Val = nf(allTotal);
+    k1Sub = 'Suma de todos los años';
+  } else {
+    k1Title = 'Ventas Acumuladas ' + p.lastYear;
+    k1Val = nf(A.totalLast);
+    k1Sub = MESES[0] + '–' + MESES[p.maxMonth] + ' · ' + p.monthsElapsed + ' meses';
+  }
+
+  var gv = A.globalVar;
+  var vColor = gv === null ? 'slate' : (gv >= 0 ? 'emerald' : 'red');
+  var vText = gv !== null ? (gv>=0?'+':'') + gv.toFixed(1) + '%' : 'N/D';
+  var proj = A.globalRunRate;
+  var prevFullEstimate = p.prevYear && p.monthsElapsed > 0 ? (A.totalPrev / p.monthsElapsed) * 12 : null;
+  var projVar = prevFullEstimate && prevFullEstimate > 0 ? ((proj / prevFullEstimate) - 1) * 100 : null;
+
+  var kpis = [
+    { title: k1Title, value: k1Val, sub: k1Sub, color: 'blue', icon: 'bar-chart-2', audit: 'totalUnits' },
+    { title: 'Variación Acumulada', value: vText, sub: p.prevYear ? 'vs ' + p.prevYear : 'sin año anterior', color: vColor, icon: (gv !== null && gv < 0) ? 'trending-down' : 'trending-up', audit: 'varYtd' },
+    { title: 'Proyección Cierre ' + p.lastYear, value: nf(Math.round(proj)), sub: projVar !== null ? fmtPct(projVar) + ' vs año ant.' : 'Run-rate', color: 'violet', icon: 'target', audit: 'proj' },
+    { title: 'Mejor Mes', value: A.bestMonth, sub: 'Pico de ventas', color: 'amber', icon: 'star', audit: 'bestMonth' },
+    { title: 'SKUs Activos', value: nf(skusCount), sub: 'Con venta en el año', color: 'emerald', icon: 'box', audit: 'activeSkus' }
+  ];
+
+  var html = kpis.map(function(k){
+    return '<div class="kpi-card kpi-' + k.color + ' audit-trigger" data-audit="' + k.audit + '" title="Clic para ver desglose">' +
+      '<div class="kpi-icon"><i data-lucide="' + k.icon + '"></i></div>' +
+      '<p class="kpi-title">' + escapeHtml(k.title) + '</p>' +
+      '<p class="kpi-value">' + escapeHtml(String(k.value)) + '</p>' +
+      '<p class="kpi-sub">' + escapeHtml(k.sub) + '</p>' +
+    '</div>';
+  }).join('');
+
+  var mpData = data.filter(function(d){ return d.isMP; });
+  var ytdMpLast = mpData.filter(function(d){ return d.year === p.lastYear && d.month <= p.maxMonth; }).reduce(function(s,d){ return s + d.units; }, 0);
+  var ytdMpPrev = p.prevYear ? mpData.filter(function(d){ return d.year === p.prevYear && d.month <= p.maxMonth; }).reduce(function(s,d){ return s + d.units; }, 0) : 0;
+  var mpShare = A.totalLast > 0 ? (ytdMpLast / A.totalLast) * 100 : 0;
+  var mpSharePrev = A.totalPrev > 0 ? (ytdMpPrev / A.totalPrev) * 100 : 0;
+  var mpDelta = mpShare - mpSharePrev;
+
+  var mpHtml = (ytdMpLast === 0)
+    ? '<div class="kpi-card kpi-slate"><div class="kpi-icon"><i data-lucide="shield-off"></i></div><p class="kpi-title">Penetración MP</p><p class="kpi-value">N/A</p><p class="kpi-sub">Sin marca propia</p></div>'
+    : '<div class="kpi-card kpi-emerald audit-trigger" data-audit="mpShare" title="Clic para ver desglose"><div class="kpi-icon"><i data-lucide="shield-check"></i></div><p class="kpi-title">Penetración MP</p><p class="kpi-value">' + mpShare.toFixed(1) + '%</p><p class="kpi-sub">' + (mpDelta>=0?'+':'') + mpDelta.toFixed(1) + ' pp vs año ant.</p></div>';
+
+  var kpiEl = $('#nati-kpi');
+  if (kpiEl) kpiEl.innerHTML = html + mpHtml;
+}
+
+function renderNatiCharts(A, data){
+  var p = A.period;
+  var mode = State.nati.chartMode;
+
+  var byYear = {};
+  p.years.forEach(function(y){ byYear[y] = [0,0,0,0,0,0,0,0,0,0,0,0]; });
+  data.forEach(function(d){ if (byYear[d.year]) byYear[d.year][d.month] += d.units; });
+  var lastData = byYear[p.lastYear] || [0,0,0,0,0,0,0,0,0,0,0,0];
+  var prevData = p.prevYear ? byYear[p.prevYear] : null;
+
+  var subEl = $('#nati-chart-subtitle');
+  if (subEl) subEl.textContent = mode === 'units'
+    ? (p.prevYear ? 'Unidades — ' + p.lastYear + ' vs ' + p.prevYear : 'Unidades — ' + p.lastYear)
+    : (p.prevYear ? 'Variación % vs ' + p.prevYear : 'Variación %');
+
+  var ytd = lastData.slice(0, p.maxMonth + 1).reduce(function(a,b){ return a+b; }, 0);
+  var prevYtd = prevData ? prevData.slice(0, p.maxMonth + 1).reduce(function(a,b){ return a+b; }, 0) : null;
+  var ytdVar = prevYtd && prevYtd > 0 ? ((ytd / prevYtd) - 1) * 100 : null;
+  var legendEl = $('#nati-chart-legend');
+  if (legendEl) legendEl.innerHTML =
+    '<div class="legend-value">' + nf(ytd) + ' un.</div>' +
+    '<div class="legend-sub">' + MESES[0] + '–' + MESES[p.maxMonth] + ' ' + p.lastYear + '</div>' +
+    (ytdVar !== null ? '<div class="legend-delta ' + (ytdVar>=0?'up':'down') + '">' + (ytdVar>=0?'▲':'▼') + ' ' + fmtPct(ytdVar) + '</div>' : '');
+
+  var datasets = [];
+  if (mode === 'units') {
+    if (prevData) datasets.push({
+      label: String(p.prevYear), data: prevData,
+      borderColor: '#94A3B8', backgroundColor: 'transparent',
+      borderWidth: 2, borderDash: [6,5], tension: 0.4,
+      pointRadius: 0, pointHoverRadius: 5,
+      pointBackgroundColor: '#94A3B8', pointBorderColor: '#fff', pointBorderWidth: 2,
+      fill: false, order: 3
+    });
+    datasets.push({
+      label: p.lastYear + ' (Real)',
+      data: lastData.map(function(v,i){ return i <= p.maxMonth ? v : null; }),
+      borderColor: '#2563EB',
+      backgroundColor: function(ctx){
+        var c = ctx.chart.ctx, chartArea = ctx.chart.chartArea;
+        if (!chartArea) return 'transparent';
+        var g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+        g.addColorStop(0, 'rgba(37,99,235,0.18)');
+        g.addColorStop(1, 'rgba(37,99,235,0.0)');
+        return g;
+      },
+      borderWidth: 3, tension: 0.4, fill: true,
+      pointRadius: lastData.map(function(_,i){ return i === p.maxMonth ? 6 : 3; }),
+      pointHoverRadius: 7,
+      pointBackgroundColor: lastData.map(function(_,i){ return i === p.maxMonth ? '#2563EB' : '#fff'; }),
+      pointBorderColor: '#2563EB', pointBorderWidth: 2,
+      order: 1
+    });
+    if (p.maxMonth < 11 && p.monthsElapsed > 0) {
+      var avg = ytd / p.monthsElapsed;
+      var projData = lastData.map(function(v,i){
+        if (i < p.maxMonth) return null;
+        if (i === p.maxMonth) return v;
+        return Math.round(avg);
+      });
+      datasets.push({
+        label: p.lastYear + ' (Proyección)', data: projData,
+        borderColor: '#F59E0B', backgroundColor: 'rgba(245,158,11,0.06)',
+        borderWidth: 2.5, borderDash: [7,5], tension: 0.4, fill: true,
+        pointRadius: projData.map(function(v,i){ return v !== null && i > p.maxMonth ? 4 : 0; }),
+        pointHoverRadius: 6,
+        pointBackgroundColor: '#F59E0B', pointBorderColor: '#fff', pointBorderWidth: 2,
+        order: 2
+      });
+    }
+  } else if (prevData) {
+    var varData = lastData.map(function(v,i){
+      if (i > p.maxMonth) return null;
+      var pv = prevData[i];
+      return (pv && pv > 0) ? parseFloat(((v/pv - 1) * 100).toFixed(1)) : null;
+    });
+    datasets.push({
+      label: 'Var % ' + p.lastYear + ' vs ' + p.prevYear, data: varData,
+      borderColor: '#2563EB', backgroundColor: 'rgba(37,99,235,0.08)',
+      borderWidth: 2.5, tension: 0.4, fill: true,
+      pointBackgroundColor: '#fff', pointBorderColor: '#2563EB', pointBorderWidth: 2,
+      pointRadius: 4, pointHoverRadius: 7
+    });
+  }
+
+  setChart('nati-trend', {
+    type: 'line',
+    data: { labels: MESES, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 700, easing: 'easeOutQuart' },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top', align: 'end', labels: { color: '#334155', usePointStyle: true, pointStyle: 'circle', boxWidth: 8, boxHeight: 8, padding: 14, font: { size: 11, weight: '600' } } },
+        tooltip: Object.assign({}, TOOLTIP_BASE, {
+          callbacks: {
+            title: function(items){ return items[0].dataIndex > p.maxMonth ? MESES[items[0].dataIndex] + ' (Proyección)' : MESES[items[0].dataIndex]; },
+            label: function(ctx){
+              if (ctx.raw === null) return null;
+              if (mode === 'units') {
+                var isProj = ctx.dataset.label && ctx.dataset.label.indexOf('Proyección') !== -1;
+                return ' ' + ctx.dataset.label.replace(' (Real)','').replace(' (Proyección)','') + ': ' + nf(ctx.raw) + ' un.' + (isProj?' (est.)':'');
+              }
+              return ' ' + ctx.dataset.label + ': ' + (ctx.raw>=0?'+':'') + ctx.raw + '%';
+            }
+          }
+        })
+      },
+      scales: {
+        x: { ticks: { color: '#64748B', font: CHART_FONT }, grid: { display: false } },
+        y: { ticks: { color: '#64748B', callback: function(v){ return mode === 'variation' ? v + '%' : fmtTickShort(v); }, font: CHART_FONT }, grid: { color: 'rgba(0,0,0,0.04)' }, beginAtZero: true }
+      }
+    }
+  });
+
+  if (prevData) {
+    setChart('nati-yoy', {
+      type: 'bar',
+      data: {
+        labels: MESES_SHORT,
+        datasets: [
+          { label: String(p.prevYear), data: prevData, backgroundColor: '#E2E8F0', borderRadius: 4 },
+          { label: String(p.lastYear), data: lastData.map(function(v,i){ return i <= p.maxMonth ? v : null; }), backgroundColor: '#3B82F6', borderRadius: 4 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'top', align: 'end', labels: { color: '#71717A', usePointStyle: true, font: { size: 10 } } },
+          tooltip: Object.assign({}, TOOLTIP_BASE, { mode: 'index' })
+        },
+        scales: {
+          x: { ticks: { color: '#71717A', font: CHART_FONT }, grid: { display: false } },
+          y: { ticks: { color: '#71717A', font: CHART_FONT, callback: function(v){ return fmtTickShort(v); } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+        }
+      }
+    });
+  }
+
+  var totalForPareto = 0; A.skusSorted.forEach(function(s){ totalForPareto += s.ytdLast; });
+  if (totalForPareto > 0) {
+    var paretoTop = A.skusSorted.slice(0, 20);
+    var pLabels = [], pUnits = [], pCum = [];
+    var accP = 0;
+    paretoTop.forEach(function(s){
+      accP += s.ytdLast;
+      pLabels.push(s.article.substring(0, 18) + (s.article.length > 18 ? '…' : ''));
+      pUnits.push(s.ytdLast);
+      pCum.push(+((accP / totalForPareto) * 100).toFixed(1));
+    });
+    setChart('nati-pareto', {
+      type: 'bar',
+      data: {
+        labels: pLabels,
+        datasets: [
+          { type: 'line', label: '% Acumulado', data: pCum, borderColor: '#F59E0B', backgroundColor: 'transparent', yAxisID: 'y1', tension: 0.2, pointRadius: 2, borderWidth: 1.5 },
+          { type: 'bar', label: 'Unidades', data: pUnits, backgroundColor: pCum.map(function(c){ return c <= 80 ? '#2563EB' : '#374151'; }), yAxisID: 'y', borderRadius: 2 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'bottom', labels: { color: '#71717A', usePointStyle: true, font: { size: 10 } } },
+          tooltip: TOOLTIP_BASE
+        },
+        scales: {
+          x: { ticks: { display: false } },
+          y: { type: 'linear', position: 'left', ticks: { color: '#71717A', callback: function(v){ return fmtTickShort(v); }, font: CHART_FONT }, grid: { color: 'rgba(0,0,0,0.04)' } },
+          y1: { type: 'linear', position: 'right', min: 0, max: 100, ticks: { color: '#F59E0B', callback: function(v){ return v + '%'; }, font: CHART_FONT }, grid: { drawOnChartArea: false } }
+        }
+      }
+    });
+    var insightEl = $('#nati-pareto-insight');
+    if (insightEl) insightEl.textContent = 'El 80% de las ventas está generado por ' + A.s80 + ' SKUs de ' + A.skus.length + ' (' + A.pct80 + '% del portafolio).';
+  }
+
+  var catMap = {};
+  A.skus.forEach(function(s){ catMap[s.category] = (catMap[s.category] || 0) + s.ytdLast; });
+  var catList = Object.keys(catMap).map(function(k){ return [k, catMap[k]]; }).sort(function(a,b){ return b[1] - a[1]; });
+  if (catList.length > 0) {
+    var top = catList.slice(0, 6);
+    var dpl = window.ChartDataLabels ? [window.ChartDataLabels] : [];
+    setChart('nati-doughnut', {
+      type: 'doughnut',
+      plugins: dpl,
+      data: {
+        labels: top.map(function(x){ return x[0]; }),
+        datasets: [{
+          data: top.map(function(x){ return x[1]; }),
+          backgroundColor: ['#3B82F6','#10B981','#F59E0B','#EF4444','#8B5CF6','#64748B'],
+          borderWidth: 2, borderColor: '#fff'
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, cutout: '70%',
+        plugins: {
+          legend: { position: 'right', labels: { color: '#71717A', usePointStyle: true, boxWidth: 8, font: { size: 10 } } },
+          tooltip: TOOLTIP_BASE,
+          datalabels: window.ChartDataLabels ? {
+            color: '#fff', font: { weight: 'bold', size: 10 },
+            formatter: function(v, ctx){
+              var total = ctx.chart.data.datasets[0].data.reduce(function(a,b){ return a+b; }, 0);
+              return total > 0 ? ((v / total) * 100).toFixed(0) + '%' : '';
+            }
+          } : {}
+        }
+      }
+    });
+  }
+
+  var brandMap = {};
+  A.skus.forEach(function(s){
+    var v = State.nati.filters.year === 'all' ? s.total : s.ytdLast;
+    brandMap[s.brand] = (brandMap[s.brand] || 0) + v;
+  });
+  var brandsTop = Object.keys(brandMap).map(function(k){ return [k, brandMap[k]]; }).filter(function(x){ return x[1] > 0; }).sort(function(a,b){ return b[1] - a[1]; }).slice(0, 10);
+  if (brandsTop.length > 0) {
+    var maxVal = brandsTop[0][1];
+    var dpl2 = window.ChartDataLabels ? [window.ChartDataLabels] : [];
+    setChart('nati-brands', {
+      type: 'bar',
+      plugins: dpl2,
+      data: {
+        labels: brandsTop.map(function(x){ return x[0]; }),
+        datasets: [{
+          data: brandsTop.map(function(x){ return x[1]; }),
+          backgroundColor: ['#3B82F6','#10B981','#F59E0B','#8B5CF6','#EC4899','#14B8A6','#F43F5E','#06B6D4','#84CC16','#D946EF'],
+          borderRadius: 4, barPercentage: 0.7, categoryPercentage: 0.9
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true, maintainAspectRatio: false,
+        layout: { padding: { right: 60, top: 5, bottom: 5 } },
+        plugins: {
+          legend: { display: false },
+          tooltip: Object.assign({}, TOOLTIP_BASE, {
+            callbacks: {
+              label: function(ctx){
+                var total = ctx.dataset.data.reduce(function(a,b){ return a+b; }, 0);
+                return ' ' + nf(ctx.raw) + ' un. (' + (total > 0 ? ((ctx.raw/total)*100).toFixed(1) : 0) + '%)';
+              }
+            }
+          }),
+          datalabels: window.ChartDataLabels ? {
+            anchor: 'end', align: 'right', color: '#71717A',
+            font: { weight: '600', size: 10 },
+            formatter: function(v, ctx){
+              var total = ctx.dataset.data.reduce(function(a,b){ return a+b; }, 0);
+              return fmtTickShort(v) + ' (' + (total > 0 ? Math.round((v/total)*100) : 0) + '%)';
+            }
+          } : {}
+        },
+        scales: {
+          x: { display: false, max: maxVal * 1.25 },
+          y: { grid: { display: false }, ticks: { color: '#3F3F46', font: { size: 11, weight: '500' } } }
+        }
+      }
+    });
+  }
+}
+
+function renderNatiTables(A){
+  var p = A.period;
+  var isAll = State.nati.filters.year === 'all';
+
+  var thTopTotal = $('#nati-th-top-total'); if (thTopTotal) thTopTotal.textContent = isAll ? 'Total Histórico' : 'Total ' + p.lastYear;
+  var thTopVar = $('#nati-th-top-var'); if (thTopVar) thTopVar.textContent = p.prevYear ? 'Var. YTD vs ' + p.prevYear : 'Var. YTD';
+  var thFullTotal = $('#nati-th-full-total'); if (thFullTotal) thFullTotal.textContent = isAll ? 'Total Histórico' : 'Total ' + p.lastYear;
+  var thFullVar = $('#nati-th-full-var'); if (thFullVar) thFullVar.textContent = p.prevYear ? 'Var. YTD vs ' + p.prevYear : 'Var. YTD';
+
+  var topEl = $('#nati-top-products');
+  if (topEl) {
+    var top10 = A.skusSorted.slice(0, 10);
+    topEl.innerHTML = top10.map(function(s, idx){
+      var isNew = s.ytdVar === null;
+      var varText = isNew ? 'Nuevo' : fmtPct(s.ytdVar);
+      var varClass = isNew ? 'badge-blue' : (s.ytdVar >= 0 ? 'badge-green' : 'badge-red');
+      var medal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : '<span class="row-num">' + (idx+1) + '</span>';
+      return '<tr>' +
+        '<td class="cell-center">' + medal + '</td>' +
+        '<td class="cell-strong" title="' + escapeHtml(s.article) + '">' + escapeHtml(s.article) + '</td>' +
+        '<td class="cell-muted" title="' + escapeHtml(s.category) + '">' + escapeHtml(s.category) + '</td>' +
+        '<td class="cell-num">' + nf(isAll ? s.total : s.ytdLast) + '</td>' +
+        '<td class="cell-num"><span class="badge ' + varClass + '">' + varText + '</span></td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  var catLeader = A.cats[0];
+  var catEl = $('#nati-cat-leader');
+  if (catEl && catLeader) {
+    var catVar = catLeader.ytdVar;
+    catEl.innerHTML = '<span class="cat-leader-name" title="' + escapeHtml(catLeader.category) + '">' + escapeHtml(catLeader.category) + '</span>' +
+      '<span class="cat-leader-val">' + nf(catLeader.total) + '</span>' +
+      (catVar !== null ? '<span class="badge ' + (catVar>=0?'badge-green':'badge-red') + '">' + fmtPct(catVar) + '</span>' : '');
+  }
+
+  var fullSorted = A.skus.filter(function(s){ return s.total > 0 || s.ytdLast > 0; }).sort(function(a,b){ return b.total - a.total; });
+  var accShare = 0;
+  fullSorted.forEach(function(s){
+    accShare += s.shareLast;
+    s.inPareto = accShare <= 80;
+  });
+
+  var renderFull = function(list){
+    var el = $('#nati-full-ranking');
+    if (!el) return;
+    el.innerHTML = list.map(function(s, idx){
+      var isNew = s.ytdVar === null;
+      var varText = isNew ? 'Nuevo' : fmtPct(s.ytdVar);
+      var varClass = isNew ? 'text-blue' : (s.ytdVar >= 0 ? 'text-emerald' : 'text-red');
+      var cls = 'Consolidado', clsBadge = 'badge-gray';
+      if (isNew) { cls = 'Nuevo'; clsBadge = 'badge-blue'; }
+      else if (s.ytdVar >= 20) { cls = 'Crecimiento'; clsBadge = 'badge-green'; }
+      else if (s.ytdVar < -30) { cls = 'Declive'; clsBadge = 'badge-red'; }
+      var avg = p.monthsElapsed > 0 ? Math.round(s.ytdLast / p.monthsElapsed) : 0;
+      return '<tr>' +
+        '<td class="row-num">' + (idx+1) + '</td>' +
+        '<td class="cell-strong" title="' + escapeHtml(s.article) + '">' + escapeHtml(s.article) + '</td>' +
+        '<td class="cell-muted" title="' + escapeHtml(s.category) + '">' + escapeHtml(s.category) + '</td>' +
+        '<td class="cell-num">' + nf(s.total) + '</td>' +
+        '<td class="cell-num cell-muted">' + nf(avg) + '</td>' +
+        '<td class="cell-num cell-strong ' + varClass + '">' + varText + '</td>' +
+        '<td class="cell-center"><span class="badge ' + clsBadge + '">' + cls + '</span></td>' +
+        '<td>' +
+          '<div class="mix-bar-wrap">' +
+            '<div class="mix-bar"><div class="' + (s.inPareto?'mix-bar-emerald':'mix-bar-blue') + '" style="width:' + Math.min(s.shareLast*4,100) + '%"></div></div>' +
+            '<span class="mix-label ' + (s.inPareto?'mix-emerald':'mix-muted') + '">' + s.shareLast.toFixed(1) + '%</span>' +
+          '</div>' +
+        '</td>' +
+      '</tr>';
+    }).join('');
+  };
+  renderFull(fullSorted);
+
+  var searchEl = $('#nati-search');
+  if (searchEl) {
+    searchEl.oninput = debounce(function(e){
+      var q = e.target.value.toLowerCase();
+      renderFull(fullSorted.filter(function(s){ return s.article.toLowerCase().indexOf(q) !== -1 || s.category.toLowerCase().indexOf(q) !== -1; }));
+    }, 150);
+  }
+}
+
+function renderNatiInsights(A){
+  var iconMap = { Alerta: 'alert-circle', Oportunidad: 'trending-up', 'Estratégico': 'target', Global: 'bar-chart-2' };
+  var colorMap = { Alerta: 'red', Oportunidad: 'emerald', 'Estratégico': 'amber', Global: 'blue' };
+
+  var insightsEl = $('#nati-insights');
+  if (insightsEl) insightsEl.innerHTML = A.insights.map(function(i){
+    return '<li class="insight-item">' +
+      '<div class="insight-icon insight-' + (colorMap[i.tipo] || 'slate') + '"><i data-lucide="' + (iconMap[i.tipo] || 'info') + '"></i></div>' +
+      '<div>' +
+        '<p class="insight-title">' + escapeHtml(i.titulo) + '</p>' +
+        '<p class="insight-text">' + escapeHtml(i.texto) + '</p>' +
+      '</div>' +
+    '</li>';
+  }).join('');
+
+  var port = A.insights.filter(function(i){ return i.tipo === 'Alerta' || i.tipo === 'Estratégico'; });
+  if (port.length === 0) port = [{ titulo: 'Sin alertas', texto: 'Portafolio estable.' }];
+  var recEl = $('#nati-recommendations');
+  if (recEl) recEl.innerHTML = port.map(function(r){
+    return '<li class="rec-item"><i data-lucide="arrow-right"></i><div><span class="rec-title">' + escapeHtml(r.titulo) + ':</span> <span class="rec-text">' + escapeHtml(r.texto) + '</span></div></li>';
+  }).join('');
+}
+
+function renderNatiMP(A, data){
+  var p = A.period;
+  var panelEl = $('#nati-mp-panel');
+  if (!panelEl) return;
+
+  var mpData = data.filter(function(d){ return d.isMP; });
+  var restData = data.filter(function(d){ return !d.isMP; });
+  var ytdMpLast = mpData.filter(function(d){ return d.year === p.lastYear && d.month <= p.maxMonth; }).reduce(function(s,d){ return s + d.units; }, 0);
+  var ytdMpPrev = p.prevYear ? mpData.filter(function(d){ return d.year === p.prevYear && d.month <= p.maxMonth; }).reduce(function(s,d){ return s + d.units; }, 0) : 0;
+  var ytdRestLast = restData.filter(function(d){ return d.year === p.lastYear && d.month <= p.maxMonth; }).reduce(function(s,d){ return s + d.units; }, 0);
+  var ytdRestPrev = p.prevYear ? restData.filter(function(d){ return d.year === p.prevYear && d.month <= p.maxMonth; }).reduce(function(s,d){ return s + d.units; }, 0) : 0;
+
+  if (ytdMpLast === 0) {
+    panelEl.innerHTML = '<div class="empty-state">No hay artículos de Marca Propia en esta selección.</div>';
+    return;
+  }
+  var mpShare = A.totalLast > 0 ? (ytdMpLast / A.totalLast) * 100 : 0;
+  var mpSharePrev = A.totalPrev > 0 ? (ytdMpPrev / A.totalPrev) * 100 : 0;
+  var shareDelta = mpShare - mpSharePrev;
+  var varMp = ytdMpPrev > 0 ? ((ytdMpLast / ytdMpPrev) - 1) * 100 : null;
+  var varRest = ytdRestPrev > 0 ? ((ytdRestLast / ytdRestPrev) - 1) * 100 : null;
+
+  panelEl.innerHTML =
+    '<div class="mp-card">' +
+      '<div class="mp-card-head"><span>Penetración MP</span><i data-lucide="pie-chart"></i></div>' +
+      '<div class="mp-big">' + mpShare.toFixed(1) + '%<span class="mp-delta ' + (shareDelta>=0?'up':'down') + '">' + (shareDelta>=0?'+':'') + shareDelta.toFixed(1) + ' pp</span></div>' +
+      '<div class="mp-bar"><div class="mp-bar-emerald" style="width:' + mpShare + '%"></div><div class="mp-bar-rest" style="width:' + (100-mpShare) + '%"></div></div>' +
+      '<div class="mp-legend"><span>MP: ' + mpShare.toFixed(1) + '%</span><span>Resto: ' + (100-mpShare).toFixed(1) + '%</span></div>' +
+    '</div>' +
+    '<div class="mp-card">' +
+      '<div class="mp-card-head"><span>Velocidad YTD</span><i data-lucide="rocket"></i></div>' +
+      '<div class="mp-velocity">' +
+        '<div><div class="mp-row"><span>Marca Propia</span><span class="' + (varMp===null?'':(varMp>=0?'text-emerald':'text-red')) + '">' + (varMp===null?'N/D':fmtPct(varMp)) + '</span></div><div class="mp-bar-thin"><div class="mp-bar-emerald" style="width:' + Math.min(Math.max((varMp||0)+50,0),100) + '%"></div></div></div>' +
+        '<div><div class="mp-row"><span>Resto Marcas</span><span class="' + (varRest===null?'':(varRest>=0?'text-emerald':'text-red')) + '">' + (varRest===null?'N/D':fmtPct(varRest)) + '</span></div><div class="mp-bar-thin"><div class="mp-bar-rest" style="width:' + Math.min(Math.max((varRest||0)+50,0),100) + '%"></div></div></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="mp-card mp-card-highlight">' +
+      '<div class="mp-card-head"><span>Insights</span><i data-lucide="award"></i></div>' +
+      '<p class="mp-winner">' + (varMp!==null && varRest!==null && varMp>varRest ? '🔥 Marca Propia lidera el crecimiento relativo' : '⚠️ Resto de marcas impulsan el desempeño') + '</p>' +
+      '<div class="mp-footer">' +
+        '<p><span>Vol. MP:</span><span>' + nf(ytdMpLast) + '</span></p>' +
+        '<p><span>Vol. Resto:</span><span>' + nf(ytdRestLast) + '</span></p>' +
+      '</div>' +
+    '</div>';
+}
+
+/* RENDER ALE */
+function populateAleFilters(){
+  var allData = State.ale.dataUnits.concat(State.ale.dataBs);
+  var years = [], months = [], brands = [], cats = [], tipos = [];
+  var seenY = {}, seenB = {}, seenC = {}, seenT = {};
+  allData.forEach(function(d){
+    if (!seenY[d.year]) { seenY[d.year] = 1; years.push(d.year); }
+    if (d.brand && !seenB[d.brand]) { seenB[d.brand] = 1; brands.push(d.brand); }
+    if (d.category && !seenC[d.category]) { seenC[d.category] = 1; cats.push(d.category); }
+    if (d.tipo && !seenT[d.tipo]) { seenT[d.tipo] = 1; tipos.push(d.tipo); }
+  });
+  years.sort(function(a,b){ return a-b; });
+  brands.sort(); cats.sort(); tipos.sort();
+  MESES.forEach(function(m){ if (allData.some(function(d){ return d.monthName === m; })) months.push(m); });
+
+  var fill = function(id, list, allLabel, currentValue){
+    var el = $(id);
+    if (!el) return;
+    el.innerHTML = '<option value="all">' + allLabel + '</option>' + list.map(function(v){ return '<option value="' + escapeHtml(String(v)) + '">' + escapeHtml(String(v)) + '</option>'; }).join('');
+    el.value = currentValue || 'all';
+  };
+  fill('#ale-year', years, 'Todos', State.ale.filters.year);
+  fill('#ale-month', months, 'Todos', State.ale.filters.month);
+  fill('#ale-brand', brands, 'Todas', State.ale.filters.brand);
+  fill('#ale-category', cats, 'Todas', State.ale.filters.category);
+  fill('#ale-tipo', tipos, 'Todos', State.ale.filters.tipo);
+
+  var skuEl = $('#ale-sku');
+  if (skuEl) skuEl.value = State.ale.filters.sku || '';
+}
+
+function renderAle(){
+  var selector = $('#ale-selector');
+  var dash = $('#ale-dashboard');
+  if (!selector || !dash) return;
+
+  if (State.ale.view === 'selector') {
+    selector.classList.remove('hidden');
+    dash.classList.add('hidden');
+    safeLucide();
+    return;
+  }
+  selector.classList.add('hidden');
+  dash.classList.remove('hidden');
+
+  var data = selectAleData();
+  var content = $('#ale-content');
+  if (data.length === 0) {
+    if (content) content.innerHTML = '<div class="empty-state">No hay datos con los filtros actuales.</div>';
+    return;
+  }
+  var E = computeAleEntityStats(data);
+  renderAleHeader();
+  renderAleKPIs(E, data);
+  renderAleTrend(data);
+  renderAleBrandRanking(E);
+  renderAleTopBottom(E);
+  renderAleAlerts(E);
+  renderAleFullRanking(data);
+  renderAleExecSummary(E, data);
+  safeLucide();
+}
+
+function renderAleHeader(){
+  var label = $('#ale-context-label');
+  if (!label) return;
+  var ctx = State.ale.context;
+  if (ctx && ctx.type === 'category') label.textContent = '📁 Categoría: ' + ctx.value;
+  else if (ctx && ctx.type === 'brand') label.textContent = '🏷️ Marca: ' + ctx.value;
+  else label.textContent = '📊 Dashboard General';
+}
+
+function renderAleKPIs(E, data){
+  var p = E.period;
+  var isBs = State.ale.mode === 'bs';
+  var fmt = function(v){ return isBs ? 'Bs ' + Math.round(v).toLocaleString('es-ES') : nf(v); };
+
+  var totalCur = 0, curMonthVal = 0, prevMonthVal = 0;
+  var activeMonths = {};
+  data.forEach(function(d){
+    if (d.year !== p.lastYear) return;
+    totalCur += d.units;
+    if (d.units > 0) activeMonths[d.month] = 1;
+    if (d.month === p.maxMonth) curMonthVal += d.units;
+    else if (p.maxMonth > 0 && d.month === p.maxMonth - 1) prevMonthVal += d.units;
+  });
+  var varMes = prevMonthVal > 0 ? ((curMonthVal / prevMonthVal) - 1) * 100 : null;
+  var monthlyAvg = Object.keys(activeMonths).length > 0 ? Math.round(totalCur / Object.keys(activeMonths).length) : 0;
+
+  var allData = getAleRawData();
+  var universe = allData.filter(function(d){ return d.year === p.lastYear; }).reduce(function(s,d){ return s + d.units; }, 0);
+  var participation = universe > 0 ? (totalCur / universe) * 100 : 100;
+
+  var growing = E.list.filter(function(e){ return e.varPct !== null && e.varPct > 0; }).length;
+  var declining = E.list.filter(function(e){ return e.varPct !== null && e.varPct < 0; }).length;
+
+  var kpis = [
+    { title: 'Venta Total ' + p.lastYear, value: fmt(totalCur), sub: isBs ? 'Bs acumulados' : 'unidades acumuladas', color: 'sky', icon: 'bar-chart-2' },
+    { title: 'Var. vs ' + (p.maxMonth > 0 ? MESES_SHORT[p.maxMonth-1] : 'mes ant.'), value: varMes !== null ? fmtPct(varMes) : 'N/D', sub: MESES_SHORT[p.maxMonth] + ': ' + fmt(curMonthVal), color: varMes === null ? 'slate' : (varMes >= 0 ? 'emerald' : 'red'), icon: (varMes !== null && varMes < 0) ? 'trending-down' : 'trending-up' },
+    { title: 'Promedio Mensual', value: fmt(monthlyAvg), sub: Object.keys(activeMonths).length + ' meses con datos', color: 'violet', icon: 'activity' },
+    { title: 'Participación', value: participation.toFixed(1) + '%', sub: (State.ale.filters.brand !== 'all' || State.ale.filters.category !== 'all') ? 'del total seleccionado' : 'del portafolio', color: 'amber', icon: 'pie-chart' },
+    { title: 'Marcas Creciendo', value: String(growing), sub: p.prevYear ? 'vs ' + p.prevYear : 'sin año ant.', color: 'emerald', icon: 'trending-up' },
+    { title: 'Marcas en Caída', value: String(declining), sub: p.prevYear ? 'vs ' + p.prevYear : 'sin año ant.', color: 'red', icon: 'trending-down' }
+  ];
+
+  var el = $('#ale-kpi');
+  if (el) el.innerHTML = kpis.map(function(k){
+    return '<div class="kpi-card kpi-' + k.color + '"><div class="kpi-icon"><i data-lucide="' + k.icon + '"></i></div><p class="kpi-title">' + escapeHtml(k.title) + '</p><p class="kpi-value">' + escapeHtml(String(k.value)) + '</p><p class="kpi-sub">' + escapeHtml(k.sub) + '</p></div>';
+  }).join('');
+}
+
+function renderAleTrend(data){
+  var p = detectPeriod(getAleRawData());
+  var isBs = State.ale.mode === 'bs';
+
+  var curYear = [0,0,0,0,0,0,0,0,0,0,0,0];
+  var prevYear = p.prevYear ? [0,0,0,0,0,0,0,0,0,0,0,0] : null;
+  data.forEach(function(d){
+    if (d.year === p.lastYear) curYear[d.month] += d.units;
+    else if (prevYear && d.year === p.prevYear) prevYear[d.month] += d.units;
+  });
+  var lastIdx = -1;
+  curYear.forEach(function(v, i){ if (v > 0) lastIdx = i; });
+
+  var datasets = [];
+  if (prevYear) {
+    datasets.push({
+      label: String(p.prevYear), data: prevYear,
+      backgroundColor: 'rgba(148,163,184,0.45)',
+      hoverBackgroundColor: 'rgba(148,163,184,0.7)',
+      borderRadius: 6, borderSkipped: false,
+      barPercentage: 0.75, categoryPercentage: 0.8, order: 2
+    });
+  }
+  datasets.push({
+    label: String(p.lastYear), data: curYear,
+    backgroundColor: curYear.map(function(v,i){ return (v === 0 && i > lastIdx) ? 'rgba(14,165,233,0.08)' : '#0EA5E9'; }),
+    hoverBackgroundColor: '#0284C7',
+    borderRadius: 6, borderSkipped: false,
+    barPercentage: 0.75, categoryPercentage: 0.8, order: 1
+  });
+
+  var subEl = $('#ale-chart-subtitle');
+  if (subEl) subEl.textContent = prevYear
+    ? p.prevYear + ' vs ' + p.lastYear + ' · ' + (isBs ? 'Bs' : 'Unidades') + ' por mes'
+    : p.lastYear + ' · ' + (isBs ? 'Bs vendidos' : 'Unidades por mes');
+
+  var dpl = window.ChartDataLabels ? [window.ChartDataLabels] : [];
+  setChart('ale-trend', {
+    type: 'bar',
+    plugins: dpl,
+    data: { labels: MESES_SHORT, datasets: datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 700, easing: 'easeOutQuart' },
+      plugins: {
+        legend: { position: 'top', align: 'end', labels: { font: { size: 11, weight: '700' }, color: '#475569', usePointStyle: true, pointStyle: 'circle', padding: 14, boxWidth: 8 } },
+        datalabels: window.ChartDataLabels ? {
+          display: function(ctx){ return ctx.dataset.data[ctx.dataIndex] > 0; },
+          anchor: 'end', align: 'end',
+          color: function(ctx){ return (prevYear ? ctx.datasetIndex === datasets.length - 1 : ctx.datasetIndex === 0) ? '#0369A1' : '#64748B'; },
+          font: { size: 9, weight: '700' },
+          formatter: function(v){ return fmtTickShort(v); }
+        } : {},
+        tooltip: Object.assign({}, TOOLTIP_BASE, {
+          callbacks: {
+            title: function(items){ return MESES_SHORT[items[0].dataIndex]; },
+            label: function(ctx){ return ' ' + ctx.dataset.label + ': ' + (isBs ? 'Bs ' + nf(ctx.raw) : nf(ctx.raw) + ' un.'); }
+          }
+        })
+      },
+      scales: {
+        x: { ticks: { color: '#64748B', font: { size: 10, weight: '700' } }, grid: { display: false } },
+        y: { ticks: { color: '#64748B', callback: function(v){ return (isBs ? 'Bs ' : '') + fmtTickShort(v); }, font: CHART_FONT }, grid: { color: 'rgba(0,0,0,0.04)' }, beginAtZero: true }
+      }
+    }
+  });
+}
+
+function renderAleBrandRanking(E){
+  var isBs = State.ale.mode === 'bs';
+  var sortEl = $('#ale-brand-sort');
+  var sortBy = sortEl ? sortEl.value : 'total';
+  var brandFiltered = E.brandFiltered;
+
+  var th1 = $('#ale-th-brand-name'); if (th1) th1.textContent = brandFiltered ? 'SKU / Producto' : 'Marca';
+  var th2 = $('#ale-th-brand-tipo'); if (th2) th2.textContent = brandFiltered ? 'Categoría' : 'Tipo';
+
+  var list = E.list.slice();
+  if (sortBy === 'total') list.sort(function(a,b){ return b.current - a.current; });
+  else if (sortBy === 'growth') list = list.filter(function(e){ return e.varPct !== null && e.varPct > 0; }).sort(function(a,b){ return b.varPct - a.varPct; });
+  else if (sortBy === 'decline') list = list.filter(function(e){ return e.varPct !== null && e.varPct < 0; }).sort(function(a,b){ return a.varPct - b.varPct; });
+  else if (sortBy === 'share') list.sort(function(a,b){ return b.share - a.share; });
+  else if (sortBy === 'share-loss') list = list.filter(function(e){ return e.shareDelta < 0; }).sort(function(a,b){ return a.shareDelta - b.shareDelta; });
+
+  var fmt = function(v){ return isBs ? 'Bs ' + Math.round(v).toLocaleString('es-ES') : nf(v); };
+  var maxShare = list[0] ? list[0].share : 1;
+
+  var el = $('#ale-brand-ranking');
+  if (!el) return;
+  el.innerHTML = list.slice(0, 30).map(function(e, i){
+    var varBg = e.varPct === null ? 'badge-gray' : (e.varPct >= 0 ? 'badge-green' : 'badge-red');
+    var varText = e.varPct !== null ? fmtPct(e.varPct) : '—';
+    var shareBar = Math.min(100, (e.share / maxShare) * 100);
+    var shareDeltaStr = e.shareDelta && Math.abs(e.shareDelta) > 0.05 ? (e.shareDelta>=0?'+':'') + e.shareDelta.toFixed(1) + ' pp' : '';
+    var secondary = brandFiltered ? (e.category || '—') : (e.tipo || '—');
+    return '<tr>' +
+      '<td class="row-num">' + (i+1) + '</td>' +
+      '<td class="cell-strong"><span class="truncate" title="' + escapeHtml(e.name) + '">' + escapeHtml(e.name) + '</span></td>' +
+      '<td><span class="chip">' + escapeHtml(secondary) + '</span></td>' +
+      '<td class="cell-num cell-strong">' + fmt(e.current) + '</td>' +
+      '<td class="cell-num cell-muted">' + (e.previous > 0 ? fmt(e.previous) : '—') + '</td>' +
+      '<td class="cell-num"><span class="badge ' + varBg + '">' + varText + '</span></td>' +
+      '<td class="cell-num"><div class="share-cell"><div class="share-bar"><div style="width:' + shareBar + '%"></div></div><span class="share-val">' + e.share.toFixed(1) + '%</span>' + (shareDeltaStr ? '<span class="share-delta ' + (e.shareDelta>=0?'up':'down') + '">' + shareDeltaStr + '</span>' : '') + '</div></td>' +
+      '<td class="cell-center">' + (e.varPct === null ? '<span class="cell-muted">—</span>' : e.varPct >= 0 ? '<span class="text-emerald">▲</span>' : '<span class="text-red">▼</span>') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderAleTopBottom(E){
+  var isBs = State.ale.mode === 'bs';
+  var fmt = function(v){ return isBs ? 'Bs ' + Math.round(v).toLocaleString('es-ES') : nf(v) + ' un.'; };
+  var sorted = E.list.slice().sort(function(a,b){ return b.current - a.current; });
+  var entityLabel = E.brandFiltered ? 'SKUs' : 'Marcas';
+
+  var t5 = $('#ale-top5-title'); if (t5) t5.textContent = 'Top 5 ' + entityLabel;
+  var b5 = $('#ale-bottom5-title'); if (b5) b5.textContent = 'Bottom 5 ' + entityLabel;
+
+  var pill = function(e, rank, type){
+    var val = (type === 'growth' || type === 'decline') ? (e.varPct !== null ? fmtPct(e.varPct) : '—') : fmt(e.current);
+    return '<div class="rank-pill rank-' + type + '"><span class="rank-num">' + rank + '</span><span class="rank-name truncate" title="' + escapeHtml(e.name) + '">' + escapeHtml(e.name) + '</span><span class="rank-val">' + val + '</span></div>';
+  };
+
+  var top5El = $('#ale-top5');
+  if (top5El) top5El.innerHTML = sorted.slice(0, 5).map(function(e, i){ return pill(e, i+1, 'top'); }).join('');
+
+  var bot5El = $('#ale-bottom5');
+  if (bot5El) bot5El.innerHTML = sorted.length > 1
+    ? sorted.slice().reverse().slice(0, 5).map(function(e, i){ return pill(e, sorted.length - i, 'bottom'); }).join('')
+    : '<p class="empty-inline">Filtra un conjunto con más ' + entityLabel.toLowerCase() + ' para ver el Bottom 5.</p>';
+
+  var growth = E.list.filter(function(e){ return e.varPct !== null && e.varPct > 0; }).sort(function(a,b){ return b.varPct - a.varPct; });
+  var growthEl = $('#ale-top5-growth');
+  if (growthEl) growthEl.innerHTML = growth.length ? growth.slice(0, 5).map(function(e, i){ return pill(e, i+1, 'growth'); }).join('') : '<p class="empty-inline">Sin datos de período anterior</p>';
+
+  var decline = E.list.filter(function(e){ return e.varPct !== null && e.varPct < 0; }).sort(function(a,b){ return a.varPct - b.varPct; });
+  var declineEl = $('#ale-bottom5-decline');
+  if (declineEl) declineEl.innerHTML = decline.length ? decline.slice(0, 5).map(function(e, i){ return pill(e, i+1, 'decline'); }).join('') : '<p class="empty-inline">Ninguna en caída</p>';
+}
+
+function renderAleAlerts(E){
+  var alerts = [];
+  E.list.forEach(function(e){
+    if (e.varPct !== null) {
+      if (e.varPct <= -15) alerts.push({ level: 'red', msg: '<b>' + escapeHtml(e.name) + '</b> cayó <b>' + fmtPct(e.varPct) + '</b> en ventas.' });
+      else if (e.varPct < 0) alerts.push({ level: 'yellow', msg: '<b>' + escapeHtml(e.name) + '</b> registra caída de <b>' + fmtPct(e.varPct) + '</b>.' });
+      else if (e.varPct >= 15) alerts.push({ level: 'green', msg: '<b>' + escapeHtml(e.name) + '</b> creció <b>' + fmtPct(e.varPct) + '</b>.' });
+    }
+    if (E.list.length > 1) {
+      if (e.shareDelta <= -2) alerts.push({ level: 'red', msg: '<b>' + escapeHtml(e.name) + '</b> perdió <b>' + Math.abs(e.shareDelta).toFixed(1) + ' pp</b> de participación.' });
+      else if (e.shareDelta >= 1.5) alerts.push({ level: 'green', msg: '<b>' + escapeHtml(e.name) + '</b> ganó <b>+' + e.shareDelta.toFixed(1) + ' pp</b> de participación.' });
+    }
+  });
+  var order = { red: 0, yellow: 1, green: 2 };
+  alerts.sort(function(a,b){ return order[a.level] - order[b.level]; });
+
+  var el = $('#ale-alerts');
+  if (!el) return;
+  el.innerHTML = alerts.length
+    ? alerts.slice(0, 15).map(function(a){
+        return '<div class="alert alert-' + a.level + '"><span class="alert-dot alert-dot-' + a.level + '"></span><span>' + a.msg + '</span></div>';
+      }).join('')
+    : '<p class="empty-inline">No hay alertas para el período seleccionado.</p>';
+}
+
+function renderAleFullRanking(data){
+  var p = detectPeriod(getAleRawData());
+  var isBs = State.ale.mode === 'bs';
+  var fmt = function(v){ return isBs ? 'Bs ' + Math.round(v).toLocaleString('es-ES') : nf(v); };
+  var isAll = State.ale.filters.year === 'all';
+
+  var thT = $('#ale-th-full-total'); if (thT) thT.textContent = 'Total Histórico';
+  var thV = $('#ale-th-full-var'); if (thV) thV.textContent = p.prevYear ? 'Var. YTD vs ' + p.prevYear : 'Var. YTD';
+
+  var skuMap = {};
+  data.forEach(function(d){
+    if (!skuMap[d.article]) skuMap[d.article] = { article: d.article, category: d.category, total: 0, ytdLast: 0, ytdPrev: 0 };
+    var s = skuMap[d.article];
+    if (isAll || String(d.year) === State.ale.filters.year) s.total += d.units;
+    if (d.month <= p.maxMonth) {
+      if (d.year === p.lastYear) s.ytdLast += d.units;
+      if (p.prevYear && d.year === p.prevYear) s.ytdPrev += d.units;
+    }
+  });
+  var list = Object.keys(skuMap).map(function(k){ return skuMap[k]; }).filter(function(s){ return s.total > 0 || s.ytdLast > 0; });
+  var total = 0; list.forEach(function(s){ total += s.total; });
+  list.forEach(function(s){
+    s.share = total > 0 ? (s.total / total) * 100 : 0;
+    if (s.ytdPrev === 0 && s.ytdLast > 0) s.ytdVar = null;
+    else if (s.ytdPrev === 0) s.ytdVar = -100;
+    else s.ytdVar = ((s.ytdLast / s.ytdPrev) - 1) * 100;
+  });
+  var fullSorted = list.slice().sort(function(a,b){ return b.total - a.total; });
+  var acc = 0;
+  fullSorted.forEach(function(s){ acc += s.share; s.inPareto = acc <= 80; });
+
+  var renderList = function(arr){
+    var el = $('#ale-full-ranking');
+    if (!el) return;
+    el.innerHTML = arr.map(function(s, i){
+      var isNew = s.ytdVar === null;
+      var vt = isNew ? 'Nuevo' : fmtPct(s.ytdVar);
+      var vc = isNew ? 'text-sky' : (s.ytdVar >= 0 ? 'text-emerald' : 'text-red');
+      var cls = 'Consolidado', cc = 'badge-gray';
+      if (isNew) { cls = 'Nuevo'; cc = 'badge-blue'; }
+      else if (s.ytdVar >= 20) { cls = 'Crecimiento'; cc = 'badge-green'; }
+      else if (s.ytdVar < -30) { cls = 'Declive'; cc = 'badge-red'; }
+      var avg = p.monthsElapsed > 0 ? Math.round(s.ytdLast / p.monthsElapsed) : 0;
+      return '<tr>' +
+        '<td class="row-num">' + (i+1) + '</td>' +
+        '<td class="cell-strong" title="' + escapeHtml(s.article) + '">' + escapeHtml(s.article) + '</td>' +
+        '<td class="cell-muted" title="' + escapeHtml(s.category) + '">' + escapeHtml(s.category) + '</td>' +
+        '<td class="cell-num cell-strong">' + fmt(s.total) + '</td>' +
+        '<td class="cell-num cell-muted">' + fmt(avg) + '</td>' +
+        '<td class="cell-num cell-strong ' + vc + '">' + vt + '</td>' +
+        '<td class="cell-center"><span class="badge ' + cc + '">' + cls + '</span></td>' +
+        '<td><div class="mix-bar-wrap"><div class="mix-bar"><div class="' + (s.inPareto?'mix-bar-emerald':'mix-bar-blue') + '" style="width:' + Math.min(s.share*4,100) + '%"></div></div><span class="mix-label ' + (s.inPareto?'mix-emerald':'mix-muted') + '">' + s.share.toFixed(1) + '%</span></div></td>' +
+      '</tr>';
+    }).join('');
+  };
+  renderList(fullSorted);
+
+  var searchEl = $('#ale-search');
+  if (searchEl) {
+    searchEl.oninput = debounce(function(e){
+      var q = e.target.value.toLowerCase();
+      renderList(fullSorted.filter(function(s){ return s.article.toLowerCase().indexOf(q) !== -1 || s.category.toLowerCase().indexOf(q) !== -1; }));
+    }, 150);
+  }
+}
+
+function renderAleExecSummary(E, data){
+  var p = E.period;
+  var isBs = State.ale.mode === 'bs';
+  var fmt = function(v){ return isBs ? 'Bs ' + Math.round(v).toLocaleString('es-ES') : nf(v); };
+
+  var tY = p.lastYear, tM = p.maxMonth;
+  var cM = tM > 0 ? tM - 1 : 11;
+  var cY = tM > 0 ? tY : tY - 1;
+
+  var cur = data.filter(function(d){ return d.year === tY && d.month === tM; }).reduce(function(s,d){ return s + d.units; }, 0);
+  var prev = data.filter(function(d){ return d.year === cY && d.month === cM; }).reduce(function(s,d){ return s + d.units; }, 0);
+  var varMes = prev > 0 ? ((cur / prev) - 1) * 100 : null;
+
+  var top = E.list.slice().sort(function(a,b){ return b.current - a.current; })[0];
+  var growth = E.list.filter(function(e){ return e.varPct !== null && e.varPct > 0; }).sort(function(a,b){ return b.varPct - a.varPct; })[0];
+  var decline = E.list.filter(function(e){ return e.varPct !== null && e.varPct < 0; }).sort(function(a,b){ return a.varPct - b.varPct; })[0];
+
+  var text = 'Las ventas de ' + MESES[tM] + ' ' + tY + ' alcanzaron <strong>' + fmt(cur) + '</strong>';
+  if (varMes !== null) text += ', ' + (varMes >= 0 ? '<span class="text-emerald">+' + varMes.toFixed(1) + '%</span>' : '<span class="text-red">' + varMes.toFixed(1) + '%</span>') + ' vs ' + MESES[cM] + ' ' + cY;
+  text += '.';
+  if (top) text += ' ' + (E.brandFiltered ? 'El SKU' : 'La marca') + ' <strong>' + escapeHtml(top.name) + '</strong> lidera con <strong>' + top.share.toFixed(1) + '%</strong> de participación.';
+  if (decline) text += ' <span class="text-red"><strong>' + escapeHtml(decline.name) + '</strong> presenta la mayor caída (' + fmtPct(decline.varPct) + ').</span>';
+  if (growth) text += ' <span class="text-emerald"><strong>' + escapeHtml(growth.name) + '</strong> destaca por crecimiento (' + fmtPct(growth.varPct) + ').</span>';
+
+  var sumEl = $('#ale-exec-summary'); if (sumEl) sumEl.innerHTML = text;
+  var perEl = $('#ale-exec-period'); if (perEl) perEl.textContent = MESES[tM] + ' ' + tY + ' vs ' + MESES[cM] + ' ' + cY;
+}
+
+function renderAleSelectorDropdown(q){
+  var dropdown = $('#ale-selector-dropdown');
+  if (!dropdown) return;
+  if (!q) { dropdown.classList.add('hidden'); dropdown.innerHTML = ''; return; }
+  var lq = q.toLowerCase();
+  var allData = State.ale.dataUnits.concat(State.ale.dataBs);
+  var cats = [], brands = [], seenC = {}, seenB = {};
+  allData.forEach(function(d){
+    if (d.category && !seenC[d.category] && d.category.toLowerCase().indexOf(lq) !== -1) { seenC[d.category] = 1; cats.push(d.category); }
+    if (d.brand && !seenB[d.brand] && d.brand.toLowerCase().indexOf(lq) !== -1) { seenB[d.brand] = 1; brands.push(d.brand); }
+  });
+  cats.sort(); brands.sort();
+
+  if (cats.length === 0 && brands.length === 0) {
+    dropdown.innerHTML = '<div class="ale-selector-empty">Sin resultados para "' + escapeHtml(q) + '"</div>';
+    dropdown.classList.remove('hidden');
+    return;
+  }
+  var html = '';
+  if (cats.length) {
+    html += '<div class="ale-selector-group-label">Categorías</div>';
+    html += cats.slice(0, 12).map(function(c){ return '<div class="ale-selector-option" data-type="category" data-value="' + escapeHtml(c) + '"><i data-lucide="layers"></i><span>' + escapeHtml(c) + '</span></div>'; }).join('');
+  }
+  if (brands.length) {
+    html += '<div class="ale-selector-group-label">Marcas</div>';
+    html += brands.slice(0, 12).map(function(b){ return '<div class="ale-selector-option" data-type="brand" data-value="' + escapeHtml(b) + '"><i data-lucide="tag"></i><span>' + escapeHtml(b) + '</span></div>'; }).join('');
+  }
+  dropdown.innerHTML = html;
+  dropdown.classList.remove('hidden');
+  safeLucide();
+}
+
+/* AUDIT */
+function openAudit(type){
+  var data = selectNatiData(true);
+  if (data.length === 0) return;
+  var A = computeNatiAnalytics(data);
+  var p = A.period;
+  var isAll = State.nati.filters.year === 'all';
+
+  var title = 'Auditoría', formula = '', headers = [], rows = [];
+
+  if (type === 'totalUnits') {
+    title = isAll ? 'Auditoría: Total Histórico' : 'Auditoría: Volumen ' + p.lastYear;
+    formula = isAll ? 'Suma de todas las unidades vendidas en todos los años.' : 'Suma de unidades vendidas en ' + p.lastYear + ' (Enero a ' + MESES[p.maxMonth] + ').';
+    headers = ['Artículo', 'Categoría', 'Marca', 'Total'];
+    rows = A.skusSorted.slice(0, 200).map(function(s){ return [s.article, s.category, s.brand, '<b>' + nf(isAll ? s.total : s.ytdLast) + '</b>']; });
+  } else if (type === 'varYtd') {
+    title = 'Variación Acumulada YTD';
+    formula = 'Fórmula: ((YTD ' + p.lastYear + ' / YTD ' + (p.prevYear || 'N/A') + ') - 1) × 100';
+    headers = ['Artículo', 'Marca', 'YTD ' + (p.prevYear||'-'), 'YTD ' + p.lastYear, 'Variación'];
+    rows = A.skus.filter(function(s){ return s.ytdLast > 0 || s.ytdPrev > 0; }).sort(function(a,b){ return b.ytdLast - a.ytdLast; }).slice(0, 200).map(function(s){
+      var isNew = s.ytdPrev === 0;
+      var v = isNew ? null : ((s.ytdLast/s.ytdPrev) - 1) * 100;
+      var vT = isNew ? 'Nuevo' : fmtPct(v);
+      var vC = isNew ? 'text-blue' : (v >= 0 ? 'text-emerald' : 'text-red');
+      return [s.article, s.brand, nf(s.ytdPrev), nf(s.ytdLast), '<span class="' + vC + '"><b>' + vT + '</b></span>'];
+    });
+  } else if (type === 'proj') {
+    title = 'Proyección Cierre';
+    formula = 'Fórmula Run-Rate: (YTD / ' + p.monthsElapsed + ' meses) × 12';
+    headers = ['Artículo', 'YTD', 'Prom./mes', 'Proyección'];
+    rows = A.skus.filter(function(s){ return s.ytdLast > 0; }).sort(function(a,b){ return b.ytdLast - a.ytdLast; }).slice(0, 200).map(function(s){
+      var avg = s.ytdLast / p.monthsElapsed;
+      return [s.article, nf(s.ytdLast), nf(Math.round(avg)), '<b>' + nf(Math.round(avg*12)) + '</b>'];
+    });
+  } else if (type === 'activeSkus') {
+    title = 'SKUs Activos';
+    formula = 'Artículos con ventas > 0 durante ' + p.lastYear + '.';
+    headers = ['Artículo', 'Categoría', 'Marca', 'Total Año'];
+    rows = A.skus.filter(function(s){ return s.ytdLast > 0; }).sort(function(a,b){ return b.ytdLast - a.ytdLast; }).map(function(s){ return [s.article, s.category, s.brand, nf(s.ytdLast)]; });
+  } else if (type === 'bestMonth') {
+    title = 'Mejor Mes (' + A.bestMonth + ')';
+    formula = 'Productos con ventas en ' + A.bestMonth + ' ' + p.lastYear + '.';
+    headers = ['Artículo', 'Marca', 'Ventas'];
+    var bm = {};
+    data.filter(function(d){ return d.year === p.lastYear && d.monthName === A.bestMonth; }).forEach(function(d){
+      if (!bm[d.article]) bm[d.article] = { art: d.article, brand: d.brand, units: 0 };
+      bm[d.article].units += d.units;
+    });
+    rows = Object.keys(bm).map(function(k){ return bm[k]; }).filter(function(s){ return s.units > 0; }).sort(function(a,b){ return b.units - a.units; }).slice(0, 200).map(function(s){ return [s.art, s.brand, '<b>' + nf(s.units) + '</b>']; });
+  } else if (type === 'mpShare') {
+    title = 'Penetración Marca Propia';
+    formula = 'Fórmula: (Unidades MP YTD / Total YTD) × 100';
+    headers = ['Artículo', 'Clasificación', 'YTD', 'Peso'];
+    rows = A.skus.filter(function(s){ return s.ytdLast > 0; }).sort(function(a,b){ return b.ytdLast - a.ytdLast; }).slice(0, 200).map(function(s){
+      var isMP = data.some(function(x){ return x.article === s.article && x.isMP; });
+      var w = A.totalLast > 0 ? (s.ytdLast / A.totalLast) * 100 : 0;
+      return [s.article, isMP ? '🏷️ Marca Propia' : 'Resto', nf(s.ytdLast), w.toFixed(2) + '%'];
+    });
+  } else {
+    return;
+  }
+
+  var titleEl = $('#audit-title'); if (titleEl) titleEl.textContent = title;
+  var formulaEl = $('#audit-formula'); if (formulaEl) formulaEl.innerHTML = formula;
+  var theadEl = $('#audit-thead');
+  if (theadEl) theadEl.innerHTML = headers.map(function(h, j){
+    return '<th class="' + (j >= headers.length - 2 ? 'align-r' : 'align-l') + '">' + escapeHtml(h) + '</th>';
+  }).join('');
+  var tbodyEl = $('#audit-tbody');
+  if (tbodyEl) tbodyEl.innerHTML = rows.map(function(r){
+    return '<tr>' + r.map(function(c, j){
+      return '<td class="' + (j >= r.length - 2 ? 'align-r' : 'align-l') + '">' + c + '</td>';
+    }).join('') + '</tr>';
+  }).join('');
+
+  var modal = $('#audit-modal');
+  if (modal) modal.classList.remove('hidden');
+  safeLucide();
+}
+function closeAudit(){
+  var modal = $('#audit-modal');
+  if (modal) modal.classList.add('hidden');
+}
+
+/* EXCEL EXPORT */
+var XL = {
+  font: function(b, c, s){ return { name: 'Calibri', bold: b, color: { argb: c }, size: s }; },
+  bg: function(c){ return { type: 'pattern', pattern: 'solid', fgColor: { argb: c } }; },
+  align: function(h, v, w){ return { horizontal: h, vertical: v, wrapText: !!w }; },
+  varColor: function(v){ return v == null ? 'FF94A3B8' : (v >= 0 ? 'FF059669' : 'FFDC2626'); },
+  HDR_DARK: 'FF0F172A', HDR_BLUE: 'FF1E3A5F', HDR_GREEN: 'FF065F46',
+  CELL_ALT: 'FFF8FAFC', CELL_WHITE: 'FFFFFFFF'
+};
+
+function exportNatiAnalysis(){
+  if (!window.ExcelJS || !window.saveAs) { alert('Librerías de exportación no cargadas.'); return; }
+  var data = selectNatiData();
+  if (data.length === 0) { alert('No hay datos para exportar.'); return; }
+  var btn = $('#btn-export-nati');
+  var orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2"></i> Generando...'; safeLucide(); }
+
+  var A = computeNatiAnalytics(data);
+  var p = A.period;
+  var wb = new ExcelJS.Workbook();
+  wb.creator = 'Sales Analytics'; wb.created = new Date();
+
+  var ws1 = wb.addWorksheet('1. Resumen Ejecutivo', { views: [{ showGridLines: false }] });
+  [3,28,16,16,16,16,16,3].forEach(function(w,i){ ws1.getColumn(i+1).width = w; });
+  ws1.mergeCells('B2:G4');
+  var t = ws1.getCell('B2');
+  t.value = 'REPORTE EJECUTIVO — ANÁLISIS DE VENTAS';
+  t.font = XL.font(true, 'FFFFFFFF', 20); t.fill = XL.bg(XL.HDR_DARK); t.alignment = XL.align('center','middle');
+  [2,3,4].forEach(function(r){ ws1.getRow(r).height = 24; });
+
+  ws1.mergeCells('B5:G5');
+  var sub = ws1.getCell('B5');
+  sub.value = 'Generado: ' + new Date().toLocaleDateString('es-ES') + '  ·  Período: ' + MESES[0] + '–' + MESES[p.maxMonth] + ' ' + p.lastYear;
+  sub.font = XL.font(false, 'FF94A3B8', 9); sub.fill = XL.bg('FF0F1629'); sub.alignment = XL.align('center','middle');
+
+  var kr = 7;
+  ws1.mergeCells(kr, 2, kr, 7);
+  var hdr = ws1.getCell(kr, 2);
+  hdr.value = '  ■ INDICADORES CLAVE';
+  hdr.font = XL.font(true, 'FFFFFFFF', 11); hdr.fill = XL.bg(XL.HDR_BLUE);
+  kr++;
+  var kpiBlocks = [
+    { label: 'VENTAS YTD ' + p.lastYear, val: A.totalLast, sub: p.monthsElapsed + ' meses' },
+    { label: 'AÑO ANTERIOR YTD', val: p.prevYear ? A.totalPrev : 'N/D', sub: p.prevYear ? String(p.prevYear) : '—' },
+    { label: 'VARIACIÓN YTD', val: A.globalVar !== null ? fmtPct(A.globalVar) : 'N/D', sub: 'vs año ant.' },
+    { label: 'PROYECCIÓN CIERRE', val: Math.round(A.globalRunRate), sub: 'Run-rate' },
+    { label: 'PARETO 80%', val: A.s80 + ' SKUs', sub: A.pct80 + '% portafolio' }
+  ];
+  kpiBlocks.forEach(function(k, i){
+    var col = 2 + i;
+    var c1 = ws1.getCell(kr, col); c1.value = k.label;
+    c1.font = XL.font(true, 'FF94A3B8', 8); c1.fill = XL.bg('FF1E293B'); c1.alignment = XL.align('center','middle');
+    var c2 = ws1.getCell(kr+1, col); c2.value = k.val;
+    c2.font = XL.font(true, 'FFFFFFFF', 14); c2.fill = XL.bg('FF1E293B'); c2.alignment = XL.align('center','middle');
+    var c3 = ws1.getCell(kr+2, col); c3.value = k.sub;
+    c3.font = XL.font(false, 'FF64748B', 8); c3.fill = XL.bg('FF1E293B'); c3.alignment = XL.align('center','middle');
+    ws1.getRow(kr).height = 14; ws1.getRow(kr+1).height = 22; ws1.getRow(kr+2).height = 12;
+  });
+  kr += 4;
+
+  ws1.mergeCells(kr, 2, kr, 7);
+  var ih = ws1.getCell(kr, 2);
+  ih.value = '  ■ INSIGHTS';
+  ih.font = XL.font(true, 'FFFFFFFF', 11); ih.fill = XL.bg(XL.HDR_GREEN);
+  kr++;
+  A.insights.forEach(function(ins){
+    ws1.mergeCells(kr, 2, kr, 7);
+    var c = ws1.getCell(kr, 2);
+    c.value = '  ' + ins.tipo.toUpperCase() + ' — ' + ins.titulo + '\n  ' + ins.texto;
+    c.font = XL.font(false, 'FF1E293B', 10); c.fill = XL.bg(XL.CELL_WHITE);
+    c.alignment = XL.align('left','top',true);
+    ws1.getRow(kr).height = 42;
+    kr++;
+  });
+
+  var ws2 = wb.addWorksheet('2. Base Completa', { views: [{ state: 'frozen', ySplit: 1 }] });
+  ws2.columns = [
+    { header: 'Ranking', key: 'rank', width: 8 },
+    { header: 'Artículo', key: 'art', width: 48 },
+    { header: 'Categoría', key: 'cat', width: 22 },
+    { header: 'Marca', key: 'brand', width: 18 },
+    { header: 'YTD ' + p.lastYear, key: 'ytd', width: 14 },
+    { header: 'YTD ' + (p.prevYear||'Ant.'), key: 'yprev', width: 14 },
+    { header: 'Var. Abs.', key: 'vabs', width: 12 },
+    { header: 'Var. %', key: 'vpct', width: 12 },
+    { header: 'Mix %', key: 'share', width: 10 },
+    { header: 'Proy. Cierre', key: 'proj', width: 14 },
+    { header: 'Clasificación', key: 'cls', width: 18 }
+  ];
+  ws2.getRow(1).font = XL.font(true, 'FFFFFFFF', 10);
+  ws2.getRow(1).fill = XL.bg(XL.HDR_DARK);
+  ws2.getRow(1).alignment = XL.align('center','middle');
+  ws2.getRow(1).height = 22;
+  ws2.autoFilter = 'A1:K1';
+
+  A.skusSorted.forEach(function(s, idx){
+    var row = ws2.addRow({
+      rank: idx + 1, art: s.article, cat: s.category, brand: s.brand,
+      ytd: s.ytdLast, yprev: s.ytdPrev, vabs: s.varAbs,
+      vpct: s.ytdVar !== null ? fmtPct(s.ytdVar) : 'Nuevo',
+      share: s.shareLast / 100,
+      proj: Math.round(s.runRate),
+      cls: s.classification
+    });
+    row.eachCell(function(c){ c.fill = XL.bg(idx % 2 === 0 ? XL.CELL_ALT : XL.CELL_WHITE); });
+    row.font = XL.font(false, 'FF1E293B', 10);
+    row.getCell('ytd').numFmt = '#,##0';
+    row.getCell('yprev').numFmt = '#,##0';
+    row.getCell('vabs').numFmt = '#,##0';
+    row.getCell('proj').numFmt = '#,##0';
+    row.getCell('share').numFmt = '0.0%';
+    row.getCell('vabs').font = XL.font(true, XL.varColor(s.varAbs), 10);
+    row.getCell('vpct').font = XL.font(true, XL.varColor(s.ytdVar), 10);
+  });
+
+  var brandMap = {};
+  A.skus.forEach(function(s){
+    if (!brandMap[s.brand]) brandMap[s.brand] = { brand: s.brand, ytdL: 0, ytdP: 0 };
+    brandMap[s.brand].ytdL += s.ytdLast;
+    brandMap[s.brand].ytdP += s.ytdPrev;
+  });
+  var ws3 = wb.addWorksheet('3. Ranking de Marcas');
+  ws3.columns = [
+    { header: 'Marca', key: 'brand', width: 28 },
+    { header: 'YTD ' + (p.prevYear||'Ant.'), key: 'prev', width: 16 },
+    { header: 'YTD ' + p.lastYear, key: 'last', width: 16 },
+    { header: 'Var. %', key: 'var', width: 12 },
+    { header: 'Mix %', key: 'share', width: 10 }
+  ];
+  ws3.getRow(1).font = XL.font(true, 'FFFFFFFF', 10);
+  ws3.getRow(1).fill = XL.bg(XL.HDR_BLUE);
+  ws3.getRow(1).alignment = XL.align('center','middle');
+  ws3.getRow(1).height = 22;
+  var totalLastForShare = 0;
+  Object.keys(brandMap).forEach(function(k){ totalLastForShare += brandMap[k].ytdL; });
+  Object.keys(brandMap).map(function(k){ return brandMap[k]; }).sort(function(a,b){ return b.ytdL - a.ytdL; }).forEach(function(b, idx){
+    var vp = b.ytdP > 0 ? ((b.ytdL / b.ytdP) - 1) * 100 : null;
+    var row = ws3.addRow({
+      brand: b.brand, prev: b.ytdP, last: b.ytdL,
+      var: vp !== null ? fmtPct(vp) : 'Nuevo',
+      share: totalLastForShare > 0 ? b.ytdL / totalLastForShare : 0
+    });
+    row.eachCell(function(c){ c.fill = XL.bg(idx % 2 === 0 ? XL.CELL_ALT : XL.CELL_WHITE); });
+    row.font = XL.font(false, 'FF1E293B', 10);
+    row.getCell('prev').numFmt = '#,##0';
+    row.getCell('last').numFmt = '#,##0';
+    row.getCell('share').numFmt = '0.0%';
+    row.getCell('var').font = XL.font(true, XL.varColor(vp), 10);
+  });
+
+  wb.xlsx.writeBuffer().then(function(buf){
+    saveAs(new Blob([buf]), 'Reporte_BI_' + p.lastYear + '_' + new Date().toISOString().slice(0,10) + '.xlsx');
+  }).catch(function(e){
+    console.error(e); alert('Error al generar el reporte: ' + e.message);
+  }).then(function(){
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+    safeLucide();
+  });
+}
+
+function exportAleBase(){
+  if (!window.ExcelJS || !window.saveAs) { alert('Librerías de exportación no cargadas.'); return; }
+  var data = selectAleData();
+  if (data.length === 0) { alert('No hay datos para exportar.'); return; }
+  var btn = $('#ale-export');
+  var orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2"></i> Generando...'; safeLucide(); }
+
+  var wb = new ExcelJS.Workbook();
+  wb.creator = 'Sales Analytics'; wb.created = new Date();
+  var ws = wb.addWorksheet('Base ALE');
+  ws.columns = [
+    { header: 'Artículo', key: 'article', width: 45 },
+    { header: 'Categoría', key: 'category', width: 22 },
+    { header: 'Marca', key: 'brand', width: 20 },
+    { header: 'Tipo Negocio', key: 'tipo', width: 20 },
+    { header: 'Año', key: 'year', width: 8 },
+    { header: 'Mes', key: 'monthName', width: 14 },
+    { header: 'Unidades', key: 'units', width: 14 }
+  ];
+  ws.getRow(1).font = XL.font(true, 'FFFFFFFF', 10);
+  ws.getRow(1).fill = XL.bg('FF0EA5E9');
+  ws.getRow(1).alignment = XL.align('center','middle');
+  ws.getRow(1).height = 22;
+  ws.autoFilter = 'A1:G1';
+  data.forEach(function(d, i){
+    var row = ws.addRow(d);
+    row.eachCell(function(c){ c.fill = XL.bg(i % 2 === 0 ? XL.CELL_ALT : XL.CELL_WHITE); });
+    row.getCell('units').numFmt = '#,##0';
+  });
+
+  wb.xlsx.writeBuffer().then(function(buf){
+    saveAs(new Blob([buf]), 'Reporte_ALE_' + new Date().toISOString().slice(0,10) + '.xlsx');
+  }).catch(function(e){
+    console.error(e); alert('Error al exportar: ' + e.message);
+  }).then(function(){
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+    safeLucide();
+  });
+}
+
+/* CONTROLLERS */
+function switchTeam(team){
+  State.activeTeam = team;
+  $$('.team-tab').forEach(function(b){ b.classList.toggle('active', b.dataset.team === team); });
+  var vn = $('#view-nati'); if (vn) vn.classList.toggle('hidden', team !== 'nati');
+  var va = $('#view-ale');  if (va) va.classList.toggle('hidden', team !== 'ale');
+  if (team === 'nati') renderNati();
+  else renderAle();
+  safeLucide();
+}
+
+function setAleMode(mode){
+  if (State.ale.mode === mode) return;
+  State.ale.mode = mode;
+  var btnU = $('#ale-mode-units'); if (btnU) btnU.classList.toggle('active', mode === 'units');
+  var btnB = $('#ale-mode-bs');    if (btnB) btnB.classList.toggle('active', mode === 'bs');
+  populateAleFilters();
+  if (State.ale.view === 'dashboard') renderAle();
+}
+
+function openAleAnalysis(type, value){
+  State.ale.context = type === 'all' ? null : { type: type, value: value };
+  if (type === 'category') { State.ale.filters.category = value; State.ale.filters.brand = 'all'; }
+  else if (type === 'brand') { State.ale.filters.brand = value; State.ale.filters.category = 'all'; }
+  State.ale.view = 'dashboard';
+  populateAleFilters();
+  renderAle();
+}
+
+function backToSelector(){
+  State.ale.view = 'selector';
+  State.ale.context = null;
+  var input = $('#ale-selector-input'); if (input) input.value = '';
+  var dd = $('#ale-selector-dropdown'); if (dd) { dd.classList.add('hidden'); dd.innerHTML = ''; }
+  renderAle();
+}
+
+/* EVENTS */
+function bindEvents(){
+  $$('.team-tab').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      if (btn.dataset.team !== State.activeTeam) switchTeam(btn.dataset.team);
+    });
+  });
+
+  ['year','month','category','brand','mp'].forEach(function(f){
+    var el = $('#nati-' + f);
+    if (el) el.addEventListener('change', function(){
+      State.nati.filters[f] = el.value;
+      renderNati();
+    });
+  });
+  var chartMode = $('#nati-chart-mode');
+  if (chartMode) chartMode.addEventListener('change', function(){
+    State.nati.chartMode = chartMode.value;
+    renderNati();
+  });
+
+  var expNati = $('#btn-export-nati');
+  if (expNati) expNati.addEventListener('click', exportNatiAnalysis);
+  var expNatiLead = $('#btn-export-nati-leaders');
+  if (expNatiLead) expNatiLead.addEventListener('click', exportAleBase);
+
+  var btnU = $('#ale-mode-units'); if (btnU) btnU.addEventListener('click', function(){ setAleMode('units'); });
+  var btnB = $('#ale-mode-bs');    if (btnB) btnB.addEventListener('click', function(){ setAleMode('bs'); });
+
+  ['year','month','brand','category','tipo'].forEach(function(f){
+    var el = $('#ale-' + f);
+    if (el) el.addEventListener('change', function(){
+      State.ale.filters[f] = el.value;
+      if (f === 'brand' || f === 'category') State.ale.context = null;
+      renderAle();
+    });
+  });
+  var skuEl = $('#ale-sku');
+  if (skuEl) skuEl.addEventListener('input', debounce(function(){
+    State.ale.filters.sku = skuEl.value;
+    renderAle();
+  }, 250));
+
+  var reset = $('#ale-reset');
+  if (reset) reset.addEventListener('click', function(){
+    State.ale.filters = { year:'all', month:'all', brand:'all', category:'all', tipo:'all', sku:'' };
+    State.ale.context = null;
+    ['year','month','brand','category','tipo'].forEach(function(f){
+      var el = $('#ale-' + f);
+      if (el) el.value = 'all';
+    });
+    if (skuEl) skuEl.value = '';
+    renderAle();
+  });
+
+  var expAle = $('#ale-export');
+  if (expAle) expAle.addEventListener('click', exportAleBase);
+
+  var back = $('#ale-back');
+  if (back) back.addEventListener('click', backToSelector);
+
+  var selInput = $('#ale-selector-input');
+  if (selInput) {
+    selInput.addEventListener('input', function(){ renderAleSelectorDropdown(selInput.value.trim()); });
+    selInput.addEventListener('focus', function(){ if (selInput.value.trim()) renderAleSelectorDropdown(selInput.value.trim()); });
+  }
+  var openGen = $('#ale-open-general');
+  if (openGen) openGen.addEventListener('click', function(){ openAleAnalysis('all', ''); });
+
+  document.addEventListener('click', function(e){
+    var dd = $('#ale-selector-dropdown');
+    if (!dd || dd.classList.contains('hidden')) return;
+    var inp = $('#ale-selector-input');
+    var opt = e.target.closest ? e.target.closest('.ale-selector-option') : null;
+    if (opt) { openAleAnalysis(opt.dataset.type, opt.dataset.value); return; }
+    if (inp && inp.contains(e.target)) return;
+    if (dd.contains(e.target)) return;
+    dd.classList.add('hidden');
+  });
+
+  var sortEl = $('#ale-brand-sort');
+  if (sortEl) sortEl.addEventListener('change', function(){ renderAle(); });
+
+  document.addEventListener('click', function(e){
+    var trig = e.target.closest ? e.target.closest('.audit-trigger') : null;
+    if (trig) { openAudit(trig.dataset.audit); return; }
+    var closer = e.target.closest ? e.target.closest('[data-close]') : null;
+    if (closer) closeAudit();
+  });
+}
+
+/* BOOTSTRAP */
+function loadWorkbook(){
+  return new Promise(function(resolve, reject){
+    var controller = new AbortController();
+    var timeout = setTimeout(function(){ controller.abort(); }, 20000);
+    fetch('nuevos_datos.xlsx', { signal: controller.signal, cache: 'no-store' })
+      .then(function(res){
+        clearTimeout(timeout);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.arrayBuffer();
+      })
+      .then(function(buf){
+        resolve(XLSX.read(new Uint8Array(buf), { type: 'array' }));
+      })
+      .catch(function(err){
+        clearTimeout(timeout);
+        reject(err);
+      });
+  });
+}
+
+function parseAllSheets(wb){
+  var names = wb.SheetNames;
+  var nati = null, aleUnits = null, aleBs = null;
+  names.forEach(function(n){
+    var u = n.toUpperCase();
+    if (!nati && u.indexOf('NATI') !== -1) nati = n;
+    if (!aleUnits && u.indexOf('UNIDADES') !== -1 && u.indexOf('ALE') !== -1) aleUnits = n;
+    if (!aleBs && u.indexOf('BS') !== -1 && u.indexOf('ALE') !== -1) aleBs = n;
+  });
+  var out = { nati: [], aleUnits: [], aleBs: [] };
+  if (nati)     out.nati     = parseNatiSheet(XLSX.utils.sheet_to_json(wb.Sheets[nati], { header: 1, defval: '' }));
+  if (aleUnits) out.aleUnits = parseAleSheet(XLSX.utils.sheet_to_json(wb.Sheets[aleUnits], { header: 1, defval: '' }));
+  if (aleBs)    out.aleBs    = parseAleSheet(XLSX.utils.sheet_to_json(wb.Sheets[aleBs], { header: 1, defval: '' }));
+  return out;
+}
+
+function init(){
+  var status = $('#splash-status');
+  if (status) status.textContent = 'Cargando datos...';
+  loadWorkbook().then(function(wb){
+    if (status) status.textContent = 'Procesando hojas...';
+    var parsed = parseAllSheets(wb);
+
+    if (!parsed.nati.length && !parsed.aleUnits.length && !parsed.aleBs.length) {
+      throw new Error('No se encontraron hojas NATI / ALE UNIDADES / ALE BS en el archivo.');
+    }
+    State.nati.data = parsed.nati;
+    State.ale.dataUnits = parsed.aleUnits;
+    State.ale.dataBs = parsed.aleBs;
+
+    populateNatiFilters();
+    populateAleFilters();
+
+    var splash = $('#splash'); if (splash) splash.classList.add('hidden');
+    var app = $('#app'); if (app) app.classList.remove('hidden');
+
+    switchTeam(parsed.nati.length ? 'nati' : 'ale');
+    safeLucide();
+  }).catch(function(err){
+    console.error('[init]', err);
+    var isFile = location.protocol === 'file:';
+    if (status) status.innerHTML = '<span class="error-msg">⚠ ' +
+      (isFile
+        ? 'Los navegadores bloquean la carga automática al abrir el HTML con doble clic. Sirve el sitio por HTTP (Vercel, GitHub Pages).'
+        : 'Error: ' + escapeHtml(err.message) + '. Verifica que <b>nuevos_datos.xlsx</b> esté en la raíz del sitio.')
+      + '</span>';
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  bindEvents();
+  init();
+});
+
+})();
+</script>
+</body>
+</html>
