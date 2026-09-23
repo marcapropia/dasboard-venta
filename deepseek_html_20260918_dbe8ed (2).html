@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Ticketing QR — Demo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<style>
+  body {
+    background:
+      radial-gradient(1200px 600px at 50% -20%, rgba(16,185,129,0.08), transparent 60%),
+      radial-gradient(800px 500px at 90% 10%, rgba(245,158,11,0.06), transparent 60%),
+      #000;
+    min-height: 100vh;
+  }
+  #lector-qr video { border-radius: 1rem; object-fit: cover; max-height: 70vh; }
+  #lector-qr { border: none !important; }
+  .tab { transition: all 0.15s; }
+  .tab.active { background: rgba(16,185,129,0.15); color: #6ee7b7; }
+  .card { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.1); border-radius: 1rem; }
+  .input {
+    width: 100%; border-radius: 0.5rem; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.03); padding: 0.625rem 0.75rem; font-size: 0.875rem;
+    color: white; outline: none; transition: all 0.15s;
+  }
+  .input:focus { border-color: rgba(16,185,129,0.5); background: rgba(255,255,255,0.05); }
+  .input::placeholder { color: rgba(255,255,255,0.3); }
+  .btn-primary { background: #059669; padding: 0.625rem 1rem; border-radius: 0.5rem; font-weight: 600; font-size: 0.875rem; color: white; transition: all 0.15s; }
+  .btn-primary:hover { background: #10b981; }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-secondary { border: 1px solid rgba(255,255,255,0.15); padding: 0.625rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; color: white; transition: all 0.15s; }
+  .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+  .btn-secondary:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-warn { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: #fbbf24; padding: 0.625rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; transition: all 0.15s; }
+  .btn-warn:hover { background: rgba(245,158,11,0.25); }
+  .btn-warn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-edit { background: rgba(56,189,248,0.12); border: 1px solid rgba(56,189,248,0.4); color: #7dd3fc; padding: 0.4rem 0.75rem; border-radius: 0.5rem; font-size: 0.75rem; font-weight: 500; transition: all 0.15s; cursor: pointer; }
+  .btn-edit:hover { background: rgba(56,189,248,0.22); }
+  .btn-add { background: rgba(16,185,129,0.1); border: 1px dashed rgba(16,185,129,0.4); color: #6ee7b7; padding: 0.625rem 1rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; transition: all 0.15s; width: 100%; }
+  .btn-add:hover { background: rgba(16,185,129,0.18); }
+  .btn-danger { background: #dc2626; padding: 0.75rem 1rem; border-radius: 0.5rem; font-weight: 700; font-size: 0.875rem; color: white; transition: all 0.15s; width: 100%; }
+  .btn-danger:hover { background: #ef4444; }
+  .btn-danger:disabled { opacity: 0.3; cursor: not-allowed; background: #7f1d1d; }
+  .label { display: block; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); margin-bottom: 0.375rem; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .fade-in { animation: fadeIn 0.2s ease; }
+  input[type="file"]::file-selector-button {
+    margin-right: 0.75rem; border: 0; border-radius: 0.5rem;
+    background: #059669; color: white; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+    cursor: pointer;
+  }
+  input[type="file"]::file-selector-button:hover { background: #10b981; }
+  .error-box { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.4); color: #fca5a5; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; }
+  .ok-box { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.4); color: #6ee7b7; padding: 0.75rem; border-radius: 0.5rem; font-size: 0.875rem; }
+  input[type="checkbox"], input[type="radio"] { accent-color: #10b981; }
+  .radio-group { display: flex; gap: 0.5rem; }
+  .radio-opt {
+    flex: 1; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    gap: 0.5rem; padding: 0.6rem; border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 0.5rem; font-size: 0.8rem; transition: all 0.15s;
+  }
+  .radio-opt:hover { background: rgba(255,255,255,0.03); }
+  .radio-opt.sel { border-color: rgba(16,185,129,0.5); background: rgba(16,185,129,0.08); color: #6ee7b7; }
+  .tipo-row { display: flex; gap: 0.5rem; align-items: center; }
+  .tipo-row input.tipo-nombre { flex: 1; min-width: 0; }
+  .tipo-row input.tipo-precio { width: 110px; flex-shrink: 0; }
+  .tipo-row .btn-del {
+    width: 40px; height: 40px; flex-shrink: 0; display: grid; place-items: center;
+    border-radius: 0.5rem; background: rgba(239,68,68,0.1); color: #f87171;
+    transition: all 0.15s; cursor: pointer;
+  }
+  .tipo-row .btn-del:hover { background: rgba(239,68,68,0.2); }
+  .entrada-edit {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 0.75rem; padding: 0.75rem;
+  }
+  .entrada-edit .fila { display: grid; grid-template-columns: 1fr 110px; gap: 0.5rem; }
+
+  /* Modal de confirmación */
+  .modal-backdrop {
+    position: fixed; inset: 0; z-index: 100;
+    display: none; align-items: center; justify-content: center;
+    background: rgba(0,0,0,0.78); backdrop-filter: blur(8px);
+    padding: 1rem;
+  }
+  .modal-backdrop.abierto { display: flex; }
+  .modal-card {
+    background: #0a0a0a;
+    border: 1px solid rgba(239,68,68,0.45);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    max-width: 460px; width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(239,68,68,0.1);
+    animation: fadeIn 0.2s ease;
+  }
+  .frase-input {
+    font-family: ui-monospace, "SF Mono", Menlo, monospace;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-color: rgba(255,255,255,0.15);
+  }
+  .frase-input.valido {
+    border-color: rgba(239,68,68,0.7);
+    background: rgba(239,68,68,0.08);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.15);
+  }
+</style>
+</head>
+<body class="text-white antialiased">
+
+<nav class="sticky top-0 z-40 border-b border-white/10 bg-black/70 backdrop-blur">
+  <div class="mx-auto flex max-w-6xl items-center gap-1 px-4 py-3">
+    <div class="mr-4 text-lg font-black tracking-tight">
+      <span class="text-emerald-400">DOS</span><span class="text-amber-400">·16</span>
+    </div>
+    <div id="tabs" class="flex flex-1 items-center gap-1 overflow-x-auto"></div>
+    <button onclick="abrirModalReinicio()" class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-white/60 hover:bg-white/5">
+      Reiniciar
+    </button>
+  </div>
+</nav>
+
+<main id="app" class="mx-auto max-w-6xl px-4 py-6"></main>
+
+<!-- MODAL DE CONFIRMACIÓN DE REINICIO -->
+<div id="modal-reinicio" class="modal-backdrop">
+  <div class="modal-card">
+    <div class="text-center mb-5">
+      <div class="text-5xl mb-3">⚠️</div>
+      <h2 class="text-lg font-bold text-red-400">Reiniciar todos los datos</h2>
+      <p class="text-sm text-white/60 mt-1">Esta acción es <b>permanente</b> y no se puede deshacer.</p>
+    </div>
+
+    <div class="rounded-xl border border-red-500/30 bg-red-500/5 p-4 mb-5">
+      <div class="text-xs uppercase tracking-wide text-red-300 font-semibold mb-2">Se borrará:</div>
+      <ul id="reinicio-resumen" class="text-sm text-white/80 space-y-1"></ul>
+    </div>
+
+    <div class="mb-5">
+      <label class="label">Escribe <span class="text-red-400 font-mono">BORRAR TODO</span> para confirmar</label>
+      <input
+        class="input frase-input"
+        id="confirmar-reinicio"
+        type="text"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="BORRAR TODO"
+      />
+    </div>
+
+    <div class="flex gap-3">
+      <button class="btn-secondary flex-1" id="btn-cancelar-reinicio">Cancelar</button>
+      <button class="btn-danger flex-1" id="btn-confirmar-reinicio" disabled>Borrar todo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// UTILIDADES
+// ============================================================
+const $ = (sel, ctx = document) => ctx.querySelector(sel);
+const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const Bs = (n) => 'Bs ' + Number(n).toLocaleString('es-BO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const fecha = (iso) => new Date(iso).toLocaleDateString('es-BO', { day: '2-digit', month: 'short', year: 'numeric' });
+const fechaHora = (iso) => new Date(iso).toLocaleString('es-BO', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+const hoy = () => new Date().toISOString().slice(0, 10);
+
+const uid = () => {
+  try { if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID(); } catch {}
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+};
+
+// ============================================================
+// FIRMA HMAC
+// ============================================================
+const SECRET = 'demo-secret-para-probar';
+async function hmac(texto) {
+  const data = texto + SECRET;
+  try {
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+      const buf = new TextEncoder().encode(data);
+      const h = await crypto.subtle.digest('SHA-256', buf);
+      return [...new Uint8Array(h)].map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 12);
+    }
+  } catch (e) {}
+  let h = 5381;
+  for (let i = 0; i < data.length; i++) h = ((h << 5) + h + data.charCodeAt(i)) | 0;
+  return Math.abs(h).toString(16).padStart(12, '0').slice(0, 12);
+}
+async function firmar(codigo) { return `EV1|${codigo}|${await hmac(codigo)}`; }
+async function verificar(payload) {
+  const partes = String(payload).trim().split('|');
+  if (partes.length !== 3 || partes[0] !== 'EV1') return null;
+  if (!/^[0-9a-f-]{36}$/i.test(partes[1])) return null;
+  const esperado = await hmac(partes[1]);
+  return partes[2] === esperado ? partes[1] : null;
+}
+
+// ============================================================
+// BASE DE DATOS
+// ============================================================
+const DB = {
+  leer(k, def = []) { try { return JSON.parse(localStorage.getItem(k)) ?? def; } catch { return def; } },
+  guardar(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); }
+    catch (e) { alert('⚠ Almacenamiento lleno. Borra eventos viejos.'); throw e; }
+  },
+  eventos()       { return this.leer('eventos'); },
+  transacciones() { return this.leer('transacciones'); },
+  entradas()      { return this.leer('entradas'); },
+  gastos()        { return this.leer('gastos'); },
+  guardarEventos(v)       { this.guardar('eventos', v); },
+  guardarTransacciones(v) { this.guardar('transacciones', v); },
+  guardarEntradas(v)      { this.guardar('entradas', v); },
+  guardarGastos(v)        { this.guardar('gastos', v); },
+};
+
+// ============================================================
+// RESET DE ESCANEOS
+// ============================================================
+function resetearEscaneos(eventoId, modo, codigo = null) {
+  const entradas = DB.entradas();
+  let reseteadas = 0;
+  const codigoLimpio = codigo ? codigo.trim().toLowerCase() : '';
+
+  entradas.forEach(e => {
+    if (e.eventoId !== eventoId) return;
+    if (modo === 'codigo') {
+      if (!codigoLimpio) return;
+      const coincide = e.codigo.toLowerCase() === codigoLimpio ||
+                       e.codigo.toLowerCase().startsWith(codigoLimpio);
+      if (coincide && e.estado !== 'valido') {
+        e.estado = 'valido'; e.escaneadoAt = null; reseteadas++;
+      }
+    } else if (modo === 'usadas') {
+      if (e.estado === 'usado') {
+        e.estado = 'valido'; e.escaneadoAt = null; reseteadas++;
+      }
+    } else if (modo === 'todas') {
+      if (e.estado !== 'valido') {
+        e.estado = 'valido'; e.escaneadoAt = null; reseteadas++;
+      }
+    }
+  });
+
+  if (reseteadas > 0) DB.guardarEntradas(entradas);
+  return reseteadas;
+}
+
+// ============================================================
+// QR
+// ============================================================
+function qrDataUrlSync(texto, cellSize = 10, margin = 4) {
+  if (typeof qrcode !== 'function') throw new Error('Librería QR no cargada.');
+  const qr = qrcode(0, 'M');
+  qr.addData(texto);
+  qr.make();
+  return qr.createDataURL(cellSize, margin);
+}
+
+// ============================================================
+// HELPERS DE IMAGEN
+// ============================================================
+function cargarImagen(src, cors = false) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    if (cors) img.crossOrigin = 'anonymous';
+    img.onload = () => res(img);
+    img.onerror = () => rej(new Error('No se pudo cargar la imagen'));
+    img.src = src;
+  });
+}
+
+async function comprimirFlyer(file, maxAncho = 1400) {
+  const dataUrl = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(file);
+  });
+  const img = await cargarImagen(dataUrl);
+  const escala = Math.min(1, maxAncho / img.naturalWidth);
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(img.naturalWidth * escala);
+  canvas.height = Math.round(img.naturalHeight * escala);
+  canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/jpeg', 0.85);
+}
+
+// ============================================================
+// TRUNCAR TEXTO
+// ============================================================
+function truncarTexto(ctx, texto, maxAncho) {
+  if (ctx.measureText(texto).width <= maxAncho) return texto;
+  let t = texto;
+  while (t.length > 1 && ctx.measureText(t + '…').width > maxAncho) t = t.slice(0, -1);
+  return t + '…';
+}
+
+// ============================================================
+// DIBUJAR ENTRADA
+// ============================================================
+function dibujarEntrada(ctx, base, qr, pos, info = {}) {
+  const W = ctx.canvas.width, H = ctx.canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(base, 0, 0, W, H);
+
+  const lado = W * pos.anchoPct;
+  const x = W * pos.xPct - lado / 2;
+  const y = H * pos.yPct - lado / 2;
+
+  const pad = lado * 0.06;
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x - pad, y - pad, lado + pad * 2, lado + pad * 2, lado * 0.05);
+  else ctx.rect(x - pad, y - pad, lado + pad * 2, lado + pad * 2);
+  ctx.fill();
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(qr, x, y, lado, lado);
+  ctx.imageSmoothingEnabled = true;
+
+  const lineas = [];
+  if (info.nombre)      lineas.push({ texto: info.nombre, peso: 'bold', color: '#ffffff', size: 0.80 });
+  if (info.tipo)        lineas.push({ texto: String(info.tipo).toUpperCase(), peso: '600', color: '#fbbf24', size: 0.62 });
+  if (info.descripcion) lineas.push({ texto: info.descripcion, peso: '500', color: 'rgba(255,255,255,0.85)', size: 0.55 });
+  if (info.extra)       lineas.push({ texto: info.extra, peso: '400', color: 'rgba(255,255,255,0.65)', size: 0.48 });
+
+  if (lineas.length > 0) {
+    const anchoTexto = lado + pad * 2;
+    const lh = lado * 0.12;
+    const padV = lado * 0.06;
+    const altoTexto = lineas.length * lh + padV * 2;
+    const gap = lado * 0.05;
+
+    let textoX = x - pad;
+    if (textoX < 8) textoX = 8;
+    if (textoX + anchoTexto > W - 8) textoX = W - 8 - anchoTexto;
+
+    const posTexto = info.posTexto || 'arriba';
+    let textoY;
+
+    if (posTexto === 'arriba') {
+      textoY = y - pad - gap - altoTexto;
+      if (textoY < 8) {
+        textoY = y + lado + pad + gap;
+        if (textoY + altoTexto > H - 8) textoY = 8;
+      }
+    } else {
+      textoY = y + lado + pad + gap;
+      if (textoY + altoTexto > H - 8) {
+        textoY = y - pad - gap - altoTexto;
+        if (textoY < 8) textoY = H - 8 - altoTexto;
+      }
+    }
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.82)';
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(textoX, textoY, anchoTexto, altoTexto, lado * 0.05);
+    else ctx.rect(textoX, textoY, anchoTexto, altoTexto);
+    ctx.fill();
+
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+    ctx.lineWidth = Math.max(2, lado * 0.009);
+    ctx.beginPath();
+    if (ctx.roundRect) ctx.roundRect(textoX, textoY, anchoTexto, altoTexto, lado * 0.05);
+    else ctx.rect(textoX, textoY, anchoTexto, altoTexto);
+    ctx.stroke();
+
+    const centroX = textoX + anchoTexto / 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    lineas.forEach((linea, i) => {
+      ctx.font = `${linea.peso} ${Math.round(lh * linea.size)}px -apple-system, "Segoe UI", Roboto, sans-serif`;
+      ctx.fillStyle = linea.color;
+      const textoTruncado = truncarTexto(ctx, linea.texto, anchoTexto - lado * 0.15);
+      const yLinea = textoY + padV + lh * i + lh / 2;
+      ctx.fillText(textoTruncado, centroX, yLinea);
+    });
+  }
+
+  return { x, y, lado };
+}
+
+// ============================================================
+// AUDIO
+// ============================================================
+function tono(ok) {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = ok ? 'sine' : 'square';
+    osc.frequency.value = ok ? 920 : 180;
+    const dur = ok ? 0.16 : 0.45;
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dur);
+    osc.start(); osc.stop(ctx.currentTime + dur);
+    osc.onended = () => ctx.close();
+  } catch {}
+}
+const vibrar = (ok) => navigator.vibrate?.(ok ? 80 : [60, 60, 60]);
+
+// ============================================================
+// ESTADO
+// ============================================================
+let ruta = 'dashboard';
+let scanner = null;
+let bloqueoEscaner = false;
+let ultimoEscaneo = { txt: '', t: 0 };
+let eventoSeleccionadoId = null;
+let transaccionEditandoId = null;
+
+// ============================================================
+// NAVEGACIÓN
+// ============================================================
+const RUTAS = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'vender',    label: 'Vender' },
+  { id: 'escaner',   label: 'Escáner' },
+  { id: 'eventos',   label: 'Eventos' },
+  { id: 'finanzas',  label: 'Finanzas' },
+];
+
+function renderTabs() {
+  $('#tabs').innerHTML = RUTAS.map(r => `
+    <button onclick="ir('${r.id}')"
+      class="tab whitespace-nowrap rounded-lg px-3 py-1.5 text-sm text-white/60 hover:text-white hover:bg-white/5 ${ruta === r.id ? 'active' : ''}">
+      ${r.label}
+    </button>
+  `).join('');
+}
+
+async function ir(r) {
+  if (r !== 'escaner' && scanner) await detenerEscaner();
+  ruta = r;
+  if (r !== 'finanzas') transaccionEditandoId = null;
+  await render();
+}
+
+async function render() {
+  renderTabs();
+  const app = $('#app');
+  if (ruta === 'dashboard') app.innerHTML = renderDashboard();
+  else if (ruta === 'vender') app.innerHTML = renderVender();
+  else if (ruta === 'escaner') app.innerHTML = renderEscaner();
+  else if (ruta === 'eventos') app.innerHTML = renderEventos();
+  else if (ruta === 'finanzas') app.innerHTML = renderFinanzas();
+
+  if (ruta === 'vender') postVender();
+  if (ruta === 'eventos') postEventos();
+  if (ruta === 'finanzas') postFinanzas();
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const eventos = DB.eventos();
+  const transacciones = DB.transacciones().filter(t => !t.anulado);
+  const entradas = DB.entradas();
+  const gastos = DB.gastos();
+
+  const ingresos = transacciones.reduce((s, t) => s + Number(t.total), 0);
+  const totalGastos = gastos.reduce((s, g) => s + Number(g.monto), 0);
+  const neta = ingresos - totalGastos;
+  const usadas = entradas.filter(e => e.estado === 'usado').length;
+
+  const stat = (label, value, sub, accent) => {
+    const ac = {
+      emerald: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/5',
+      gold:    'text-amber-400 border-amber-500/20 bg-amber-500/5',
+      red:     'text-red-400 border-red-500/20 bg-red-500/5',
+      blue:    'text-sky-400 border-sky-500/20 bg-sky-500/5',
+    }[accent];
+    return `
+      <div class="rounded-2xl border p-4 ${ac}">
+        <div class="text-xs uppercase tracking-wide text-white/50">${label}</div>
+        <div class="mt-1 text-2xl font-bold">${value}</div>
+        ${sub ? `<div class="mt-0.5 text-xs text-white/40">${sub}</div>` : ''}
+      </div>`;
+  };
+
+  return `
+    <div class="space-y-6 fade-in">
+      <header>
+        <h1 class="text-3xl font-bold">Dashboard</h1>
+        <p class="text-sm text-white/50">Vista general del negocio</p>
+      </header>
+
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        ${stat('Ingresos', Bs(ingresos), '', 'emerald')}
+        ${stat('Gastos', Bs(totalGastos), '', 'red')}
+        ${stat('Ganancia', Bs(neta), '', 'gold')}
+        ${stat('Entradas', entradas.length, `${usadas} escaneadas`, 'blue')}
+      </div>
+
+      <div class="grid gap-3 sm:grid-cols-3">
+        <button onclick="ir('vender')" class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5 text-left transition hover:bg-emerald-500/10">
+          <div class="text-2xl">💳</div>
+          <div class="mt-2 font-semibold">Vender</div>
+          <div class="text-xs text-white/50">Registrar venta y generar QR</div>
+        </button>
+        <button onclick="ir('escaner')" class="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-5 text-left transition hover:bg-amber-500/10">
+          <div class="text-2xl">📷</div>
+          <div class="mt-2 font-semibold">Escáner</div>
+          <div class="text-xs text-white/50">Validar entradas en la puerta</div>
+        </button>
+        <button onclick="ir('eventos')" class="rounded-2xl border border-sky-500/30 bg-sky-500/5 p-5 text-left transition hover:bg-sky-500/10">
+          <div class="text-2xl">🎪</div>
+          <div class="mt-2 font-semibold">Eventos</div>
+          <div class="text-xs text-white/50">Crear y configurar</div>
+        </button>
+      </div>
+
+      ${eventos.length === 0 ? `
+        <div class="card p-8 text-center">
+          <p class="text-white/50">Aún no hay eventos. Empieza por crear uno.</p>
+          <button onclick="ir('eventos')" class="btn-primary mt-4">Crear primer evento</button>
+        </div>
+      ` : `
+        <div class="card p-5">
+          <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-white/70">Resumen por evento</h2>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="text-left text-xs uppercase text-white/40">
+                <tr>
+                  <th class="pb-2">Evento</th>
+                  <th class="pb-2">Fecha</th>
+                  <th class="pb-2 text-right">Vendidas</th>
+                  <th class="pb-2 text-right">Escaneadas</th>
+                  <th class="pb-2 text-right">Ingresos</th>
+                  <th class="pb-2 text-right">Balance</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${eventos.map(e => {
+                  const ingresosE = DB.transacciones().filter(t => t.eventoId === e.id && !t.anulado).reduce((s, t) => s + Number(t.total), 0);
+                  const gastosE = DB.gastos().filter(g => g.eventoId === e.id).reduce((s, g) => s + Number(g.monto), 0);
+                  const entradasE = DB.entradas().filter(en => en.eventoId === e.id);
+                  const usadasE = entradasE.filter(en => en.estado === 'usado').length;
+                  const bal = ingresosE - gastosE;
+                  return `
+                    <tr class="border-t border-white/5">
+                      <td class="py-2 font-medium">${esc(e.nombre)}</td>
+                      <td class="py-2 text-white/60">${fecha(e.fecha)}</td>
+                      <td class="py-2 text-right font-mono">${entradasE.length}</td>
+                      <td class="py-2 text-right font-mono text-emerald-400">${usadasE}</td>
+                      <td class="py-2 text-right font-mono">${Bs(ingresosE)}</td>
+                      <td class="py-2 text-right font-mono ${bal >= 0 ? 'text-emerald-400' : 'text-red-400'}">${Bs(bal)}</td>
+                    </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `}
+    </div>
+  `;
+}
+
+// ============================================================
+// EDITOR DE TIPOS
+// ============================================================
+function agregarFilaTipo(containerId, nombre = '', precio = '') {
+  const cont = $('#' + containerId);
+  if (!cont) return;
+
+  const row = document.createElement('div');
+  row.className = 'tipo-row';
+  row.dataset.tipoRow = '1';
+  row.innerHTML = `
+    <input class="input tipo-nombre" placeholder="Ej: Hombre, Combo 2x1, VIP + Botella" value="${esc(nombre)}" />
+    <input class="input tipo-precio" type="number" min="0" step="0.01" placeholder="Bs" value="${esc(precio)}" />
+    <button type="button" class="btn-del" title="Eliminar">✕</button>
+  `;
+  row.querySelector('.btn-del').addEventListener('click', () => row.remove());
+  cont.appendChild(row);
+}
+
+function renderTiposEditor(containerId, preciosIniciales = null) {
+  const cont = $('#' + containerId);
+  if (!cont) return;
+  cont.innerHTML = '';
+
+  if (preciosIniciales && Object.keys(preciosIniciales).length > 0) {
+    Object.entries(preciosIniciales).forEach(([nombre, precio]) => {
+      agregarFilaTipo(containerId, nombre, precio);
+    });
+  } else {
+    agregarFilaTipo(containerId, 'Hombre', 80);
+    agregarFilaTipo(containerId, 'Mujer', 40);
+    agregarFilaTipo(containerId, 'VIP', 150);
+  }
+}
+
+function leerTiposEditor(containerId) {
+  const precios = {};
+  $$('#' + containerId + ' [data-tipo-row]').forEach(row => {
+    const nombre = row.querySelector('.tipo-nombre')?.value.trim();
+    const precio = Number(row.querySelector('.tipo-precio')?.value) || 0;
+    if (nombre) precios[nombre] = precio;
+  });
+  return precios;
+}
+
+// ============================================================
+// EVENTOS
+// ============================================================
+function renderEventos() {
+  const eventos = DB.eventos();
+  return `
+    <div class="space-y-6 fade-in">
+      <h1 class="text-2xl font-bold">Eventos</h1>
+
+      <div class="card p-5">
+        <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-white/70">Nuevo evento</h2>
+        <form id="form-evento" class="space-y-4">
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="sm:col-span-2">
+              <label class="label">Nombre *</label>
+              <input class="input" name="nombre" required placeholder="DOS-16" />
+            </div>
+            <div>
+              <label class="label">Fecha y hora *</label>
+              <input class="input" name="fecha" type="datetime-local" required />
+            </div>
+            <div>
+              <label class="label">Lugar</label>
+              <input class="input" name="lugar" placeholder="Disco Bar..." />
+            </div>
+          </div>
+
+          <div>
+            <label class="label">Flyer del evento</label>
+            <input class="input" type="file" id="input-flyer" accept="image/*" />
+            <p class="mt-1 text-xs text-white/40">Se comprime a 1400px antes de guardar.</p>
+            <div id="flyer-preview" class="mt-3 hidden">
+              <img id="flyer-img" class="max-h-48 rounded-lg border border-white/10" />
+              <p class="mt-1 text-xs text-emerald-400">✓ Flyer cargado</p>
+            </div>
+          </div>
+
+          <fieldset class="rounded-xl border border-white/10 p-4">
+            <legend class="px-1 text-xs uppercase text-white/50">Tipos de entrada y precios (Bs)</legend>
+            <div id="tipos-editor" class="space-y-2 mb-3"></div>
+            <button type="button" id="btn-add-tipo" class="btn-add">+ Agregar tipo de entrada</button>
+          </fieldset>
+
+          <fieldset class="rounded-xl border border-white/10 p-4">
+            <legend class="px-1 text-xs uppercase text-white/50">Texto en la entrada</legend>
+            <div class="space-y-3">
+              <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" name="mostrarNombre" checked class="h-4 w-4" />
+                <span>Mostrar <b>nombre del comprador</b></span>
+              </label>
+              <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" name="mostrarTipo" checked class="h-4 w-4" />
+                <span>Mostrar <b>tipo de entrada</b></span>
+              </label>
+              <label class="flex items-center gap-2 text-sm cursor-pointer">
+                <input type="checkbox" name="mostrarDescripcion" checked class="h-4 w-4" />
+                <span>Mostrar <b>descripción personalizada</b> (si la hay)</span>
+              </label>
+
+              <div>
+                <label class="label">Posición del texto respecto al QR</label>
+                <div class="radio-group" id="pos-texto-group">
+                  <label class="radio-opt sel" data-pos="arriba">
+                    <input type="radio" name="posTexto" value="arriba" checked class="hidden" />
+                    <span>⬆ Arriba del QR</span>
+                  </label>
+                  <label class="radio-opt" data-pos="abajo">
+                    <input type="radio" name="posTexto" value="abajo" class="hidden" />
+                    <span>⬇ Abajo del QR</span>
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label class="label">Texto adicional (opcional)</label>
+                <input class="input" name="textoExtra" maxlength="60"
+                       placeholder="Ej: Válido hasta 2 AM · Solo mayores de 18" />
+              </div>
+            </div>
+          </fieldset>
+
+          <button type="submit" class="btn-primary w-full">Crear evento</button>
+        </form>
+      </div>
+
+      ${eventos.length > 0 ? `
+        <div>
+          <h2 class="mb-3 text-sm font-semibold uppercase tracking-wide text-white/70">Eventos creados (${eventos.length})</h2>
+          <div class="grid gap-3 sm:grid-cols-2">
+            ${eventos.map(e => `
+              <div class="card p-5">
+                <div class="flex items-start justify-between">
+                  <div>
+                    <h3 class="font-semibold">${esc(e.nombre)}</h3>
+                    <p class="text-xs text-white/50">${fecha(e.fecha)} · ${esc(e.lugar || '—')}</p>
+                  </div>
+                  <button onclick="eliminarEvento('${e.id}')" class="text-xs text-red-400 hover:underline">Eliminar</button>
+                </div>
+                ${e.flyerDataUrl
+                  ? `<img src="${e.flyerDataUrl}" class="mt-3 max-h-32 rounded-lg border border-white/10" />`
+                  : `<p class="mt-3 text-xs text-amber-400">⚠ Sin flyer cargado</p>`}
+                <div class="mt-3 space-y-1">
+                  <div class="text-[10px] uppercase tracking-wide text-white/40">Tipos de entrada:</div>
+                  <div class="flex flex-wrap gap-1">
+                    ${Object.entries(e.precios || {}).map(([nombre, precio]) =>
+                      `<span class="rounded bg-emerald-500/10 text-emerald-300 px-2 py-0.5 text-[10px]">${esc(nombre)} · ${Bs(precio)}</span>`
+                    ).join('')}
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+
+function postEventos() {
+  renderTiposEditor('tipos-editor');
+  $('#btn-add-tipo')?.addEventListener('click', () => agregarFilaTipo('tipos-editor', '', ''));
+
+  const grupo = $('#pos-texto-group');
+  if (grupo) {
+    grupo.querySelectorAll('.radio-opt').forEach(opt => {
+      opt.addEventListener('click', () => {
+        grupo.querySelectorAll('.radio-opt').forEach(o => o.classList.remove('sel'));
+        opt.classList.add('sel');
+        opt.querySelector('input').checked = true;
+      });
+    });
+  }
+
+  const input = $('#input-flyer');
+  if (input) {
+    input.addEventListener('change', async (ev) => {
+      const file = ev.target.files?.[0];
+      if (!file) return;
+      try {
+        const dataUrl = await comprimirFlyer(file);
+        const preview = $('#flyer-preview');
+        const img = $('#flyer-img');
+        img.src = dataUrl;
+        preview.classList.remove('hidden');
+        preview.dataset.dataUrl = dataUrl;
+      } catch (err) {
+        console.error(err);
+        alert('No se pudo cargar el flyer: ' + err.message);
+      }
+    });
+  }
+
+  const form = $('#form-evento');
+  if (form) {
+    form.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(ev.target);
+      const preview = $('#flyer-preview');
+      const flyerDataUrl = preview?.dataset.dataUrl || null;
+
+      const precios = leerTiposEditor('tipos-editor');
+      if (Object.keys(precios).length === 0) {
+        alert('Debes agregar al menos un tipo de entrada.');
+        return;
+      }
+
+      const evento = {
+        id: uid(),
+        nombre: fd.get('nombre'),
+        fecha: new Date(fd.get('fecha')).toISOString(),
+        lugar: fd.get('lugar') || null,
+        flyerDataUrl,
+        qrConfig: { xPct: 0.5, yPct: 0.82, anchoPct: 0.25 },
+        precios,
+        mostrarNombre: fd.get('mostrarNombre') === 'on',
+        mostrarTipo:   fd.get('mostrarTipo')   === 'on',
+        mostrarDescripcion: fd.get('mostrarDescripcion') === 'on',
+        textoPosicion: fd.get('posTexto') || 'arriba',
+        textoExtra:    (fd.get('textoExtra') || '').trim() || null,
+        createdAt: new Date().toISOString(),
+      };
+
+      const eventos = DB.eventos();
+      eventos.push(evento);
+      DB.guardarEventos(eventos);
+
+      if (!flyerDataUrl) {
+        alert('Evento creado. Nota: no cargaste flyer, las entradas se generarán solo con el QR.');
+      }
+
+      render();
+    });
+  }
+}
+
+function eliminarEvento(id) {
+  if (!confirm('¿Eliminar este evento? También se borrarán sus ventas y gastos.')) return;
+  DB.guardarEventos(DB.eventos().filter(e => e.id !== id));
+  DB.guardarEntradas(DB.entradas().filter(e => e.eventoId !== id));
+  DB.guardarTransacciones(DB.transacciones().filter(t => t.eventoId !== id));
+  DB.guardarGastos(DB.gastos().filter(g => g.eventoId !== id));
+  render();
+}
+
+// ============================================================
+// VENDER
+// ============================================================
+function renderVender() {
+  const eventos = DB.eventos();
+  if (eventos.length === 0) {
+    return `
+      <div class="card p-8 text-center fade-in">
+        <p class="text-white/60">Primero necesitas crear un evento.</p>
+        <button onclick="ir('eventos')" class="btn-primary mt-4">Ir a Eventos</button>
+      </div>`;
+  }
+
+  return `
+    <div class="mx-auto max-w-xl space-y-6 fade-in">
+      <h1 class="text-2xl font-bold">Vender entradas</h1>
+
+      <div class="card p-5" id="form-venta-wrap">
+        <form id="form-venta" class="space-y-6">
+          <div>
+            <label class="label">Evento</label>
+            <select class="input" name="eventoId" id="venta-evento">
+              ${eventos.map(e => `<option value="${e.id}">${esc(e.nombre)} — ${fecha(e.fecha)}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-white/50">Datos del comprador</h3>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div class="sm:col-span-2">
+                <label class="label">Nombre completo *</label>
+                <input class="input" name="nombre" required placeholder="Ej: Juan Pérez" />
+              </div>
+              <div>
+                <label class="label">CI</label>
+                <input class="input" name="ci" placeholder="12345678" />
+              </div>
+              <div>
+                <label class="label">WhatsApp</label>
+                <input class="input" name="telefono" placeholder="+591 70000000" />
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4">
+            <h3 class="text-xs font-semibold uppercase tracking-wide text-white/50">Entradas</h3>
+            <div id="tipos-entradas"></div>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label class="label">Método de pago</label>
+              <select class="input" name="metodo">
+                <option value="efectivo">Efectivo</option>
+                <option value="qr">QR bancario</option>
+                <option value="transferencia">Transferencia</option>
+                <option value="cortesia">Cortesía</option>
+              </select>
+            </div>
+            <div>
+              <label class="label">Notas</label>
+              <input class="input" name="notas" placeholder="Opcional" />
+            </div>
+          </div>
+
+          <div class="flex items-center justify-between rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4">
+            <div>
+              <div class="text-xs uppercase tracking-wide text-white/50">Total a cobrar</div>
+              <div class="text-2xl font-bold text-emerald-400" id="total-venta">Bs 0,00</div>
+            </div>
+            <div class="text-right text-xs text-white/50">
+              <span id="cantidad-venta">0</span> entrada(s)
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary w-full py-3 text-base" id="btn-registrar" disabled>
+            💳 Registrar y generar entradas
+          </button>
+        </form>
+      </div>
+
+      <div id="venta-error"></div>
+      <div id="venta-resultado"></div>
+    </div>
+  `;
+}
+
+function postVender() {
+  const form = $('#form-venta');
+  if (!form) return;
+
+  const renderTipos = () => {
+    const eventoId = $('#venta-evento').value;
+    const evento = DB.eventos().find(e => e.id === eventoId);
+    if (!evento) return;
+
+    const cont = $('#tipos-entradas');
+    cont.innerHTML = Object.entries(evento.precios).map(([tipo, precio]) => `
+      <div class="flex items-center gap-3 rounded-xl bg-white/[0.03] p-3" data-tipo="${esc(tipo)}">
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-medium truncate" title="${esc(tipo)}">${esc(tipo)}</div>
+          <div class="text-xs text-white/40">${Bs(precio)}</div>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          <button type="button" data-op="-" class="grid h-8 w-8 place-items-center rounded-lg bg-white/5 hover:bg-white/10">−</button>
+          <span class="cantidad w-6 text-center font-mono text-lg tabular-nums">0</span>
+          <button type="button" data-op="+" class="grid h-8 w-8 place-items-center rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30">+</button>
+        </div>
+      </div>
+    `).join('');
+
+    cont.querySelectorAll('button[data-op]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = btn.closest('[data-tipo]');
+        const span = row.querySelector('.cantidad');
+        const curr = Number(span.textContent) || 0;
+        span.textContent = Math.max(0, curr + (btn.dataset.op === '+' ? 1 : -1));
+        actualizarTotal();
+      });
+    });
+
+    actualizarTotal();
+  };
+
+  const leerItems = () => {
+    const items = [];
+    $$('#tipos-entradas [data-tipo]').forEach(row => {
+      const cant = Number(row.querySelector('.cantidad').textContent) || 0;
+      if (cant > 0) items.push({ tipo: row.dataset.tipo, cantidad: cant });
+    });
+    return items;
+  };
+
+  const actualizarTotal = () => {
+    const eventoId = $('#venta-evento').value;
+    const evento = DB.eventos().find(e => e.id === eventoId);
+    const items = leerItems();
+    const total = items.reduce((s, i) => s + (evento.precios[i.tipo] || 0) * i.cantidad, 0);
+    const cant = items.reduce((s, i) => s + i.cantidad, 0);
+    $('#total-venta').textContent = Bs(total);
+    $('#cantidad-venta').textContent = cant;
+    $('#btn-registrar').disabled = cant === 0;
+  };
+
+  $('#venta-evento').addEventListener('change', renderTipos);
+  renderTipos();
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const errorBox = $('#venta-error');
+    errorBox.innerHTML = '';
+
+    try {
+      const eventoId = $('#venta-evento').value;
+      const evento = DB.eventos().find(e => e.id === eventoId);
+      const items = leerItems();
+      if (!items.length) return;
+
+      const fd = new FormData(form);
+      const transaccionId = uid();
+      const total = items.reduce((s, i) => s + (evento.precios[i.tipo] || 0) * i.cantidad, 0);
+
+      const transaccion = {
+        id: transaccionId,
+        eventoId,
+        compradorNombre: fd.get('nombre'),
+        compradorCi: fd.get('ci'),
+        telefono: fd.get('telefono'),
+        metodoPago: fd.get('metodo'),
+        notas: fd.get('notas'),
+        total,
+        anulado: false,
+        createdAt: new Date().toISOString(),
+      };
+
+      const nuevasEntradas = [];
+      for (const it of items) {
+        for (let i = 0; i < it.cantidad; i++) {
+          nuevasEntradas.push({
+            id: uid(),
+            transaccionId,
+            eventoId,
+            codigo: uid(),
+            tipo: it.tipo,
+            descripcion: null,
+            precio: evento.precios[it.tipo] || 0,
+            estado: 'valido',
+            escaneadoAt: null,
+            createdAt: new Date().toISOString(),
+          });
+        }
+      }
+
+      const transacciones = DB.transacciones();
+      transacciones.push(transaccion);
+      DB.guardarTransacciones(transacciones);
+
+      const entradas = DB.entradas();
+      entradas.push(...nuevasEntradas);
+      DB.guardarEntradas(entradas);
+
+      $('#form-venta-wrap').classList.add('hidden');
+      await mostrarResultadoVenta(evento, transaccion, nuevasEntradas);
+
+    } catch (err) {
+      console.error('[venta] ERROR:', err);
+      errorBox.innerHTML = `<div class="error-box"><b>Error:</b><br>${esc(err.message)}</div>`;
+      $('#form-venta-wrap').classList.remove('hidden');
+      $('#venta-resultado').innerHTML = '';
+    }
+  });
+}
+
+async function mostrarResultadoVenta(evento, transaccion, entradas) {
+  const cont = $('#venta-resultado');
+  cont.innerHTML = `
+    <div class="card p-5">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="font-semibold">Entradas generadas</h2>
+          <p class="text-xs text-white/50">${esc(transaccion.compradorNombre)} · ${entradas.length} entrada(s)</p>
+        </div>
+        <span class="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-300">
+          ${Bs(transaccion.total)}
+        </span>
+      </div>
+      <div id="lista-entradas" class="mt-5 space-y-5"></div>
+      <button onclick="ir('vender')" class="btn-secondary mt-4 w-full">+ Nueva venta</button>
+    </div>
+  `;
+
+  const lista = $('#lista-entradas');
+
+  for (let i = 0; i < entradas.length; i++) {
+    const e = entradas[i];
+    try {
+      const payload = await firmar(e.codigo);
+      const qrDataUrlStr = qrDataUrlSync(payload, 10, 4);
+
+      const bloque = document.createElement('div');
+      bloque.className = 'space-y-3 rounded-2xl border border-white/10 bg-white/[0.02] p-4';
+      bloque.innerHTML = `
+        <div class="flex items-center justify-between gap-3">
+          <span class="text-sm font-semibold shrink-0">Entrada ${i + 1} / ${entradas.length}</span>
+          <span class="rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-medium text-emerald-300 truncate">
+            ${esc(e.tipo)} · Bs ${e.precio}
+          </span>
+        </div>
+        <div class="overflow-hidden rounded-xl border border-white/10 bg-black">
+          <canvas class="block h-auto w-full"></canvas>
+        </div>
+        <div class="grid grid-cols-2 gap-3">
+          <button class="btn-primary" data-descargar>⬇ Descargar PNG</button>
+          <button class="btn-secondary" data-compartir>↗ Compartir</button>
+        </div>
+      `;
+
+      lista.appendChild(bloque);
+
+      const canvas = bloque.querySelector('canvas');
+      const ANCHO = 1080;
+
+      if (evento.flyerDataUrl) {
+        const [base, qrImg] = await Promise.all([
+          cargarImagen(evento.flyerDataUrl),
+          cargarImagen(qrDataUrlStr),
+        ]);
+        canvas.width = ANCHO;
+        canvas.height = Math.round((ANCHO * base.naturalHeight) / base.naturalWidth);
+
+        const info = {
+          nombre:      evento.mostrarNombre !== false ? transaccion.compradorNombre : null,
+          tipo:        evento.mostrarTipo   !== false ? e.tipo : null,
+          descripcion: evento.mostrarDescripcion !== false ? e.descripcion : null,
+          extra:       evento.textoExtra || null,
+          posTexto:    evento.textoPosicion || 'arriba',
+        };
+        dibujarEntrada(canvas.getContext('2d'), base, qrImg, evento.qrConfig, info);
+      } else {
+        canvas.width = 600;
+        canvas.height = 600;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, 600, 600);
+        const qrImg = await cargarImagen(qrDataUrlStr);
+        ctx.drawImage(qrImg, 50, 50, 500, 500);
+      }
+
+      const descargar = () => {
+        try {
+          canvas.toBlob((blob) => {
+            if (!blob) return alert('No se pudo exportar la imagen.');
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `entrada-${e.codigo.slice(0, 8)}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          }, 'image/png', 0.95);
+        } catch (err) {
+          alert('Error al descargar: ' + err.message);
+        }
+      };
+
+      bloque.querySelector('[data-descargar]').addEventListener('click', descargar);
+      bloque.querySelector('[data-compartir]').addEventListener('click', () => {
+        canvas.toBlob(async (blob) => {
+          if (!blob) return alert('No se pudo exportar la imagen.');
+          const file = new File([blob], `entrada-${e.codigo.slice(0, 8)}.png`, { type: 'image/png' });
+          if (navigator.canShare?.({ files: [file] })) {
+            try { await navigator.share({ files: [file], title: 'Entrada' }); } catch {}
+          } else descargar();
+        }, 'image/png', 0.95);
+      });
+
+    } catch (err) {
+      const bloqueErr = document.createElement('div');
+      bloqueErr.className = 'error-box';
+      bloqueErr.innerHTML = `<b>Error generando entrada ${i + 1}:</b><br>${esc(err.message)}`;
+      lista.appendChild(bloqueErr);
+    }
+  }
+}
+
+// ============================================================
+// ESCÁNER
+// ============================================================
+function renderEscaner() {
+  return `
+    <div class="mx-auto max-w-md space-y-4 fade-in">
+      <h1 class="text-2xl font-bold">Escanear entradas</h1>
+
+      <div class="rounded-xl border border-sky-500/30 bg-sky-500/5 p-3 text-xs text-sky-200">
+        💡 <b>Tip:</b> si no tienes cámara, usa <b>Escanear desde archivo</b> y sube el PNG que descargaste.
+      </div>
+
+      <button id="btn-iniciar-escaner" class="w-full rounded-2xl bg-emerald-600 py-8 text-lg font-bold text-white transition hover:bg-emerald-500 active:scale-[0.98]">
+        📷 Iniciar escáner (cámara)
+      </button>
+
+      <div class="grid grid-cols-2 gap-3">
+        <label for="input-file-scan" class="cursor-pointer rounded-lg border border-white/15 py-3 text-center text-sm text-white/70 hover:bg-white/5">
+          📁 Escanear desde archivo
+        </label>
+        <input type="file" id="input-file-scan" accept="image/*" class="hidden" />
+        <button id="btn-detener-escaner" class="btn-secondary hidden">⏹ Detener</button>
+      </div>
+
+      <div id="escaner-wrap" class="hidden">
+        <div class="relative overflow-hidden rounded-2xl bg-black">
+          <div id="lector-qr" class="w-full"></div>
+          <div id="overlay-resultado" class="pointer-events-none absolute inset-0 hidden flex-col items-center justify-center gap-3 text-center text-white"></div>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <div class="flex-1 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-4 text-center">
+          <div class="text-3xl font-bold text-emerald-400" id="contador-ok">0</div>
+          <div class="text-xs uppercase tracking-wide text-white/40">Válidas</div>
+        </div>
+        <div class="flex-1 rounded-2xl border border-red-500/30 bg-red-500/5 p-4 text-center">
+          <div class="text-3xl font-bold text-red-400" id="contador-rechazadas">0</div>
+          <div class="text-xs uppercase tracking-wide text-white/40">Rechazadas</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function iniciarEscaner() {
+  const btnIni = $('#btn-iniciar-escaner');
+  const wrap = $('#escaner-wrap');
+  const btnFin = $('#btn-detener-escaner');
+  if (!btnIni) return;
+
+  btnIni.classList.add('hidden');
+  wrap.classList.remove('hidden');
+  btnFin.classList.remove('hidden');
+
+  scanner = new Html5Qrcode('lector-qr', { verbose: false });
+
+  try {
+    await scanner.start(
+      { facingMode: 'environment' },
+      { fps: 12, qrbox: { width: 260, height: 260 }, aspectRatio: 1 },
+      async (texto) => {
+        const ahora = Date.now();
+        if (bloqueoEscaner) return;
+        if (ultimoEscaneo.txt === texto && ahora - ultimoEscaneo.t < 4000) return;
+        bloqueoEscaner = true;
+        ultimoEscaneo = { txt: texto, t: ahora };
+        await validarPayload(texto);
+        setTimeout(() => { bloqueoEscaner = false; ocultarOverlay(); }, 1800);
+      },
+      () => {},
+    );
+  } catch (e) {
+    console.error(e);
+    mostrarOverlay('invalido', { mensaje: 'No se pudo acceder a la cámara.' });
+  }
+}
+
+async function detenerEscaner() {
+  if (!scanner) return;
+  try {
+    if (scanner.isScanning) await scanner.stop();
+    await scanner.clear();
+  } catch {}
+  scanner = null;
+}
+
+async function escanearArchivo(file) {
+  const dataUrl = await new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = () => rej(r.error);
+    r.readAsDataURL(file);
+  });
+  const img = await cargarImagen(dataUrl);
+  const W = img.naturalWidth;
+  const H = img.naturalHeight;
+  console.log('[scan] imagen cargada:', W, 'x', H);
+
+  if ('BarcodeDetector' in window) {
+    try {
+      const det = new BarcodeDetector({ formats: ['qr_code'] });
+      const codes = await det.detect(img);
+      if (codes.length > 0) {
+        console.log('[scan] ✅ BarcodeDetector nativo');
+        return codes[0].rawValue;
+      }
+      console.log('[scan] BarcodeDetector no encontró QR, probando jsQR…');
+    } catch (e) {
+      console.warn('[scan] BarcodeDetector falló:', e.message);
+    }
+  }
+
+  if (typeof jsQR !== 'function') {
+    throw new Error('Librería jsQR no cargada. Revisa tu conexión y recarga.');
+  }
+
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+  const probar = (sx, sy, sw, sh, escala, label) => {
+    const dw = Math.round(sw * escala);
+    const dh = Math.round(sh * escala);
+    canvas.width = dw;
+    canvas.height = dh;
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
+    const data = ctx.getImageData(0, 0, dw, dh);
+    const code = jsQR(data.data, dw, dh, { inversionAttempts: 'attemptBoth' });
+    if (code && code.data) {
+      console.log('[scan] ✅ jsQR en', label, '(escala', escala + ')');
+      return code.data;
+    }
+    return null;
+  };
+
+  let r = probar(0, 0, W, H, Math.min(1, 1200 / Math.max(W, H)), 'full-1200');
+  if (r) return r;
+
+  if (W <= 2000 && H <= 2000) {
+    r = probar(0, 0, W, H, 1, 'full-original');
+    if (r) return r;
+  }
+
+  {
+    const sw = Math.round(W * 0.70);
+    const sh = Math.round(H * 0.55);
+    const sx = Math.round((W - sw) / 2);
+    const sy = Math.round(H * 0.40);
+    r = probar(sx, sy, sw, sh, 1.5, 'bottom-center-upscale');
+    if (r) return r;
+    r = probar(sx, sy, sw, sh, 1, 'bottom-center');
+    if (r) return r;
+  }
+
+  const cuadrantes = [
+    [0, 0, W/2, H/2, 'TL'],
+    [W/2, 0, W/2, H/2, 'TR'],
+    [0, H/2, W/2, H/2, 'BL'],
+    [W/2, H/2, W/2, H/2, 'BR'],
+  ];
+  for (const [sx, sy, sw, sh, label] of cuadrantes) {
+    r = probar(sx, sy, sw, sh, 1.5, 'cuadrante-' + label);
+    if (r) return r;
+  }
+
+  if (W <= 1000 && H <= 1000) {
+    r = probar(0, 0, W, H, 2, 'full-2x');
+    if (r) return r;
+  }
+
+  throw new Error('No se detectó ningún QR. Prueba con una imagen más nítida o recorta la zona del QR.');
+}
+
+async function validarPayload(payload) {
+  const codigo = await verificar(payload);
+  if (!codigo) {
+    mostrarOverlay('falsificado'); tono(false); vibrar(false);
+    incrementarContador('rechazadas'); return;
+  }
+
+  const entradas = DB.entradas();
+  const entrada = entradas.find(e => e.codigo === codigo);
+  if (!entrada) {
+    mostrarOverlay('invalido'); tono(false); vibrar(false);
+    incrementarContador('rechazadas'); return;
+  }
+
+  const transaccion = DB.transacciones().find(t => t.id === entrada.transaccionId);
+  const comprador = transaccion?.compradorNombre ?? '—';
+
+  if (entrada.estado === 'usado') {
+    mostrarOverlay('ya_usado', { tipo: entrada.tipo, comprador, escaneadoAt: entrada.escaneadoAt });
+    tono(false); vibrar(false); incrementarContador('rechazadas'); return;
+  }
+  if (entrada.estado === 'anulado') {
+    mostrarOverlay('anulado', { tipo: entrada.tipo, comprador });
+    tono(false); vibrar(false); incrementarContador('rechazadas'); return;
+  }
+
+  entrada.estado = 'usado';
+  entrada.escaneadoAt = new Date().toISOString();
+  DB.guardarEntradas(entradas);
+
+  mostrarOverlay('ok', { tipo: entrada.tipo, comprador });
+  tono(true); vibrar(true); incrementarContador('ok');
+}
+
+function mostrarOverlay(resultado, datos = {}) {
+  const ov = $('#overlay-resultado');
+  if (!ov) return;
+  const colores = { ok: '#059669', ya_usado: '#d97706', anulado: '#b91c1c', falsificado: '#b91c1c', invalido: '#b91c1c' };
+  const etiquetas = { ok: '✓ VÁLIDA', ya_usado: '⚠ YA UTILIZADA', anulado: '✕ ANULADA', falsificado: '✕ QR FALSIFICADO', invalido: '✕ INVÁLIDA' };
+
+  ov.className = 'pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 text-center text-white';
+  ov.style.background = colores[resultado] + 'f2';
+  ov.innerHTML = `
+    <span class="text-4xl font-black tracking-tight">${etiquetas[resultado] || '✕'}</span>
+    ${datos.tipo ? `<span class="rounded-full bg-black/30 px-3 py-1 text-sm uppercase">${esc(datos.tipo)}</span>` : ''}
+    ${datos.comprador ? `<span class="text-base">${esc(datos.comprador)}</span>` : ''}
+    ${datos.escaneadoAt ? `<span class="text-xs opacity-80">Usada: ${fechaHora(datos.escaneadoAt)}</span>` : ''}
+    ${datos.mensaje ? `<span class="px-6 text-sm opacity-90">${esc(datos.mensaje)}</span>` : ''}
+  `;
+}
+
+function ocultarOverlay() {
+  const ov = $('#overlay-resultado');
+  if (!ov) return;
+  ov.className = 'pointer-events-none absolute inset-0 hidden flex-col items-center justify-center gap-3 text-center text-white';
+  ov.style.background = '';
+  ov.innerHTML = '';
+}
+
+function incrementarContador(tipo) {
+  const id = tipo === 'ok' ? '#contador-ok' : '#contador-rechazadas';
+  const el = $(id);
+  if (el) el.textContent = Number(el.textContent) + 1;
+}
+
+// ============================================================
+// EDITOR DE VENTAS
+// ============================================================
+function renderVentasEditor(evento) {
+  const transacciones = DB.transacciones()
+    .filter(t => t.eventoId === evento.id)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  if (transacciones.length === 0) {
+    return `
+      <div class="card p-5 mb-6">
+        <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-white/70">Ventas y entradas</h2>
+        <p class="py-6 text-center text-sm text-white/40">Sin ventas registradas.</p>
+      </div>
+    `;
+  }
+
+  if (transaccionEditandoId) {
+    const tx = transacciones.find(t => t.id === transaccionEditandoId);
+    if (!tx) { transaccionEditandoId = null; return renderVentasEditor(evento); }
+    const entradasTx = DB.entradas().filter(e => e.transaccionId === tx.id);
+
+    return `
+      <div class="card p-5 mb-6 border-sky-500/40">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-sm font-semibold uppercase tracking-wide text-sky-300">✎ Editando venta</h2>
+          <span class="text-xs text-white/50">${fechaHora(tx.createdAt)}</span>
+        </div>
+
+        <div class="space-y-4">
+          <div class="grid gap-3 sm:grid-cols-3">
+            <div class="sm:col-span-3">
+              <label class="label">Nombre del comprador</label>
+              <input class="input" id="edit-nombre" value="${esc(tx.compradorNombre)}" />
+            </div>
+            <div>
+              <label class="label">CI</label>
+              <input class="input" id="edit-ci" value="${esc(tx.compradorCi || '')}" />
+            </div>
+            <div>
+              <label class="label">WhatsApp</label>
+              <input class="input" id="edit-tel" value="${esc(tx.telefono || '')}" />
+            </div>
+            <div>
+              <label class="label">Método de pago</label>
+              <select class="input" id="edit-metodo">
+                ${['efectivo','qr','transferencia','cortesia'].map(m =>
+                  `<option value="${m}" ${tx.metodoPago === m ? 'selected' : ''}>${m.charAt(0).toUpperCase()+m.slice(1)}</option>`
+                ).join('')}
+              </select>
+            </div>
+            <div class="sm:col-span-3">
+              <label class="label">Notas de la transacción</label>
+              <input class="input" id="edit-notas" value="${esc(tx.notas || '')}"
+                     placeholder="Ej: Originalmente Hombre 80 + upgrade 20 a Combo Pareja" />
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <label class="label mb-0">Entradas (${entradasTx.length})</label>
+              <span class="text-xs text-white/40">Edita tipo, precio y descripción</span>
+            </div>
+            <div class="space-y-3" id="edit-entradas">
+              ${entradasTx.map((en, i) => `
+                <div class="entrada-edit" data-entrada-id="${en.id}">
+                  <div class="flex items-center justify-between mb-2 text-xs">
+                    <span class="text-white/50">Entrada ${i + 1} · código ${esc(en.codigo.slice(0,8))}</span>
+                    <span class="rounded-full px-2 py-0.5 text-[10px] ${en.estado === 'usado' ? 'bg-amber-500/20 text-amber-300' : en.estado === 'anulado' ? 'bg-red-500/20 text-red-300' : 'bg-emerald-500/20 text-emerald-300'}">
+                      ${en.estado.toUpperCase()}
+                    </span>
+                  </div>
+                  <div class="fila mb-2">
+                    <div>
+                      <label class="label mb-1 text-[10px]">Tipo</label>
+                      <input class="input edit-tipo" value="${esc(en.tipo)}" />
+                    </div>
+                    <div>
+                      <label class="label mb-1 text-[10px]">Precio (Bs)</label>
+                      <input class="input edit-precio" type="number" min="0" step="0.01" value="${en.precio}" />
+                    </div>
+                  </div>
+                  <div>
+                    <label class="label mb-1 text-[10px]">Descripción (aparece en el QR)</label>
+                    <input class="input edit-descripcion" value="${esc(en.descripcion || '')}"
+                           placeholder="Ej: Hombre (Combo Pareja), Mujer (Combo Pareja)" />
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="flex gap-3 pt-2">
+            <button class="btn-primary flex-1" id="btn-guardar-edit">💾 Guardar cambios</button>
+            <button class="btn-secondary flex-1" id="btn-cancelar-edit">Cancelar</button>
+          </div>
+
+          <p class="text-xs text-white/40">
+            💡 Al guardar, el total de la transacción se recalcula sumando los precios de sus entradas.
+          </p>
+        </div>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="card p-5 mb-6">
+      <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-white/70">Ventas y entradas (${transacciones.length})</h2>
+      <div class="space-y-2">
+        ${transacciones.map(tx => {
+          const entradasTx = DB.entradas().filter(e => e.transaccionId === tx.id);
+          const totalCalc = entradasTx.reduce((s, e) => s + Number(e.precio), 0);
+          const tipos = [...new Set(entradasTx.map(e => e.tipo))];
+          const usadas = entradasTx.filter(e => e.estado === 'usado').length;
+          return `
+            <div class="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.02] p-3 ${tx.anulado ? 'opacity-50' : ''}">
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-medium truncate">${esc(tx.compradorNombre)}</span>
+                  ${tx.anulado ? `<span class="rounded bg-red-500/20 text-red-300 text-[10px] px-2 py-0.5">ANULADA</span>` : ''}
+                </div>
+                <div class="text-xs text-white/50 mt-0.5">
+                  ${fechaHora(tx.createdAt)} · ${entradasTx.length} entrada(s) · ${usadas} usada(s)
+                </div>
+                ${tipos.length > 0 ? `
+                  <div class="flex flex-wrap gap-1 mt-1.5">
+                    ${tipos.map(t => `<span class="rounded bg-emerald-500/10 text-emerald-300 text-[10px] px-2 py-0.5">${esc(t)}</span>`).join('')}
+                  </div>
+                ` : ''}
+                ${tx.notas ? `<div class="text-xs text-amber-300/80 mt-1">📝 ${esc(tx.notas)}</div>` : ''}
+              </div>
+              <div class="text-right shrink-0">
+                <div class="font-mono font-semibold">${Bs(totalCalc)}</div>
+                <button class="btn-edit mt-2" data-edit-tx="${tx.id}">✎ Editar</button>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+}
+
+// ============================================================
+// FINANZAS
+// ============================================================
+function renderFinanzas() {
+  const eventos = DB.eventos();
+  if (eventos.length === 0) {
+    return `
+      <div class="card p-8 text-center fade-in">
+        <p class="text-white/60">Primero crea un evento.</p>
+        <button onclick="ir('eventos')" class="btn-primary mt-4">Ir a Eventos</button>
+      </div>`;
+  }
+  if (!eventoSeleccionadoId || !eventos.find(e => e.id === eventoSeleccionadoId)) {
+    eventoSeleccionadoId = eventos[0].id;
+  }
+  return `
+    <div class="space-y-6 fade-in">
+      <h1 class="text-2xl font-bold">Finanzas</h1>
+      <div class="card p-5">
+        <label class="label">Seleccionar evento</label>
+        <select class="input" id="finanzas-evento">
+          ${eventos.map(e => `<option value="${e.id}" ${e.id === eventoSeleccionadoId ? 'selected' : ''}>${esc(e.nombre)}</option>`).join('')}
+        </select>
+      </div>
+      <div id="finanzas-contenido"></div>
+    </div>
+  `;
+}
+
+function postFinanzas() {
+  const sel = $('#finanzas-evento');
+  if (!sel) return;
+  sel.addEventListener('change', (e) => {
+    eventoSeleccionadoId = e.target.value;
+    transaccionEditandoId = null;
+    renderFinanzasContenido();
+  });
+  renderFinanzasContenido();
+}
+
+function renderFinanzasContenido() {
+  const cont = $('#finanzas-contenido');
+  if (!cont) return;
+  const evento = DB.eventos().find(e => e.id === eventoSeleccionadoId);
+  if (!evento) return;
+
+  const ingresos = DB.transacciones().filter(t => t.eventoId === evento.id && !t.anulado).reduce((s, t) => s + Number(t.total), 0);
+  const gastosEvento = DB.gastos().filter(g => g.eventoId === evento.id);
+  const totalGastos = gastosEvento.reduce((s, g) => s + Number(g.monto), 0);
+  const neta = ingresos - totalGastos;
+
+  const entradasEvento = DB.entradas().filter(en => en.eventoId === evento.id);
+  const usadasCount = entradasEvento.filter(en => en.estado === 'usado').length;
+  const noValidasCount = entradasEvento.filter(en => en.estado !== 'valido').length;
+
+  const porTipo = {};
+  entradasEvento.forEach(en => {
+    if (!porTipo[en.tipo]) porTipo[en.tipo] = { vendidas: 0, usadas: 0, ingresos: 0 };
+    porTipo[en.tipo].vendidas++;
+    porTipo[en.tipo].ingresos += Number(en.precio);
+    if (en.estado === 'usado') porTipo[en.tipo].usadas++;
+  });
+
+  cont.innerHTML = `
+    <div class="grid gap-3 sm:grid-cols-3 mb-6">
+      <div class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+        <div class="text-xs uppercase text-white/50">Ingresos</div>
+        <div class="mt-1 text-2xl font-bold text-emerald-400">${Bs(ingresos)}</div>
+      </div>
+      <div class="rounded-2xl border border-red-500/30 bg-red-500/5 p-5">
+        <div class="text-xs uppercase text-white/50">Gastos</div>
+        <div class="mt-1 text-2xl font-bold text-red-400">${Bs(totalGastos)}</div>
+      </div>
+      <div class="rounded-2xl border ${neta >= 0 ? 'border-amber-500/30 bg-amber-500/5' : 'border-red-500/30 bg-red-500/5'} p-5">
+        <div class="text-xs uppercase text-white/50">Ganancia neta</div>
+        <div class="mt-1 text-2xl font-bold ${neta >= 0 ? 'text-amber-400' : 'text-red-400'}">${Bs(neta)}</div>
+      </div>
+    </div>
+
+    ${renderVentasEditor(evento)}
+
+    <div class="card p-5 mb-6 border-amber-500/30">
+      <h2 class="mb-2 text-sm font-semibold uppercase tracking-wide text-amber-300">🔄 Resetear escaneos</h2>
+      <p class="text-xs text-white/50 mb-4">
+        Útil si hiciste pruebas con entradas reales. Las entradas escaneadas vuelven a estado <b>válida</b>
+        y podrán escanearse de nuevo. <b>No se borran</b> las ventas ni los ingresos.
+      </p>
+
+      <div class="flex flex-wrap gap-3 mb-4">
+        <button id="btn-reset-usadas" class="btn-warn" ${usadasCount === 0 ? 'disabled' : ''}>
+          ↩ Resetear las escaneadas (${usadasCount})
+        </button>
+        <button id="btn-reset-todas" class="btn-warn" ${noValidasCount === 0 ? 'disabled' : ''}>
+          ↩ Resetear todas las no-válidas (${noValidasCount})
+        </button>
+      </div>
+
+      <div class="border-t border-white/10 pt-4">
+        <label class="label">Resetear una entrada específica por código</label>
+        <div class="flex gap-2">
+          <input class="input flex-1" id="input-reset-codigo"
+                 placeholder="Código completo o primeros 8 caracteres..." />
+          <button id="btn-reset-codigo" class="btn-secondary">Resetear</button>
+        </div>
+      </div>
+
+      <div id="reset-mensaje" class="mt-4"></div>
+    </div>
+
+    ${Object.keys(porTipo).length > 0 ? `
+      <div class="card p-5 mb-6">
+        <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-white/70">Desglose por tipo de entrada</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs uppercase text-white/40">
+              <tr>
+                <th class="pb-2">Tipo</th>
+                <th class="pb-2 text-right">Vendidas</th>
+                <th class="pb-2 text-right">Escaneadas</th>
+                <th class="pb-2 text-right">Ingresos</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(porTipo).map(([tipo, d]) => `
+                <tr class="border-t border-white/5">
+                  <td class="py-2 font-medium">${esc(tipo)}</td>
+                  <td class="py-2 text-right font-mono">${d.vendidas}</td>
+                  <td class="py-2 text-right font-mono text-emerald-400">${d.usadas}</td>
+                  <td class="py-2 text-right font-mono">${Bs(d.ingresos)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    ` : ''}
+
+    <div class="card p-5 mb-6">
+      <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-white/70">Registrar gasto</h2>
+      <form id="form-gasto" class="grid gap-3 sm:grid-cols-5">
+        <div class="sm:col-span-2">
+          <label class="label">Descripción</label>
+          <input class="input" name="descripcion" required placeholder="Sonido, seguridad..." />
+        </div>
+        <div>
+          <label class="label">Categoría</label>
+          <select class="input" name="categoria">
+            <option value="sonido">Sonido</option>
+            <option value="seguridad">Seguridad</option>
+            <option value="bebidas">Bebidas</option>
+            <option value="publicidad">Publicidad</option>
+            <option value="personal">Personal</option>
+            <option value="otro">Otro</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Monto (Bs)</label>
+          <input class="input" name="monto" type="number" step="0.01" min="0" required />
+        </div>
+        <div>
+          <label class="label">Fecha</label>
+          <input class="input" name="fecha" type="date" value="${hoy()}" />
+        </div>
+        <div class="sm:col-span-5">
+          <button type="submit" class="btn-primary w-full">+ Agregar gasto</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="mb-4 text-sm font-semibold uppercase tracking-wide text-white/70">Gastos (${gastosEvento.length})</h2>
+      ${gastosEvento.length === 0 ? `
+        <p class="py-6 text-center text-sm text-white/40">Sin gastos registrados.</p>
+      ` : `
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead class="text-left text-xs uppercase text-white/40">
+              <tr>
+                <th class="pb-2">Fecha</th>
+                <th class="pb-2">Descripción</th>
+                <th class="pb-2">Categoría</th>
+                <th class="pb-2 text-right">Monto</th>
+                <th class="pb-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${gastosEvento.map(g => `
+                <tr class="border-t border-white/5">
+                  <td class="py-2 text-white/60">${fecha(g.fecha)}</td>
+                  <td class="py-2">${esc(g.descripcion)}</td>
+                  <td class="py-2 text-white/60 capitalize">${esc(g.categoria)}</td>
+                  <td class="py-2 text-right font-mono text-red-400">${Bs(g.monto)}</td>
+                  <td class="py-2 text-right">
+                    <button onclick="eliminarGasto('${g.id}')" class="text-xs text-white/40 hover:text-red-400">✕</button>
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `}
+    </div>
+  `;
+
+  // ---- Reset ----
+  const mensaje = $('#reset-mensaje');
+  const mostrarMsg = (texto, tipo = 'ok') => {
+    mensaje.innerHTML = `<div class="${tipo === 'ok' ? 'ok-box' : 'error-box'}">${texto}</div>`;
+    setTimeout(() => { mensaje.innerHTML = ''; }, 4000);
+  };
+
+  $('#btn-reset-usadas')?.addEventListener('click', () => {
+    if (!confirm(`¿Resetear las ${usadasCount} entradas escaneadas de "${evento.nombre}"?`)) return;
+    const n = resetearEscaneos(evento.id, 'usadas');
+    mostrarMsg(`✓ ${n} entrada(s) reseteadas.`);
+    renderFinanzasContenido();
+  });
+
+  $('#btn-reset-todas')?.addEventListener('click', () => {
+    if (!confirm(`¿Resetear TODAS las entradas no-válidas (${noValidasCount})?`)) return;
+    const n = resetearEscaneos(evento.id, 'todas');
+    mostrarMsg(`✓ ${n} entrada(s) reseteadas.`);
+    renderFinanzasContenido();
+  });
+
+  const inputCodigo = $('#input-reset-codigo');
+  const btnCodigo = $('#btn-reset-codigo');
+  const resetCodigo = () => {
+    const valor = inputCodigo.value.trim();
+    if (!valor) return mostrarMsg('Ingresa un código.', 'err');
+    const existe = DB.entradas().some(e =>
+      e.eventoId === evento.id &&
+      (e.codigo.toLowerCase() === valor.toLowerCase() ||
+       e.codigo.toLowerCase().startsWith(valor.toLowerCase()))
+    );
+    if (!existe) return mostrarMsg('No se encontró ese código en este evento.', 'err');
+    const n = resetearEscaneos(evento.id, 'codigo', valor);
+    mostrarMsg(n === 0 ? 'Esa entrada ya estaba válida.' : `✓ ${n} entrada(s) reseteadas.`);
+    inputCodigo.value = '';
+    renderFinanzasContenido();
+  };
+  btnCodigo?.addEventListener('click', resetCodigo);
+  inputCodigo?.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') { ev.preventDefault(); resetCodigo(); }
+  });
+
+  // ---- Editor de ventas ----
+  $$('[data-edit-tx]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      transaccionEditandoId = btn.dataset.editTx;
+      renderFinanzasContenido();
+    });
+  });
+
+  $('#btn-cancelar-edit')?.addEventListener('click', () => {
+    transaccionEditandoId = null;
+    renderFinanzasContenido();
+  });
+
+  $('#btn-guardar-edit')?.addEventListener('click', () => {
+    const transacciones = DB.transacciones();
+    const tx = transacciones.find(t => t.id === transaccionEditandoId);
+    if (!tx) return;
+
+    tx.compradorNombre = $('#edit-nombre').value.trim() || tx.compradorNombre;
+    tx.compradorCi     = $('#edit-ci').value.trim() || null;
+    tx.telefono        = $('#edit-tel').value.trim() || null;
+    tx.metodoPago      = $('#edit-metodo').value;
+    tx.notas           = $('#edit-notas').value.trim() || null;
+
+    const entradas = DB.entradas();
+    $$('#edit-entradas [data-entrada-id]').forEach(row => {
+      const id = row.dataset.entradaId;
+      const e = entradas.find(x => x.id === id);
+      if (!e) return;
+      e.tipo        = row.querySelector('.edit-tipo').value.trim() || e.tipo;
+      e.precio      = Number(row.querySelector('.edit-precio').value) || 0;
+      e.descripcion = row.querySelector('.edit-descripcion').value.trim() || null;
+    });
+
+    const entradasDeEstaTx = entradas.filter(e => e.transaccionId === tx.id);
+    tx.total = entradasDeEstaTx.reduce((s, e) => s + Number(e.precio), 0);
+
+    DB.guardarTransacciones(transacciones);
+    DB.guardarEntradas(entradas);
+
+    transaccionEditandoId = null;
+    renderFinanzasContenido();
+
+    const ok = document.createElement('div');
+    ok.className = 'ok-box mb-4';
+    ok.textContent = `✓ Venta actualizada. Total recalculado: Bs ${tx.total.toFixed(2)}`;
+    const cont2 = $('#finanzas-contenido');
+    cont2.insertBefore(ok, cont2.firstChild);
+    setTimeout(() => ok.remove(), 4000);
+  });
+
+  // ---- Formulario de gasto ----
+  $('#form-gasto').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(ev.target);
+    const gastos = DB.gastos();
+    gastos.push({
+      id: uid(),
+      eventoId: evento.id,
+      descripcion: fd.get('descripcion'),
+      categoria: fd.get('categoria'),
+      monto: Number(fd.get('monto')),
+      fecha: fd.get('fecha') || hoy(),
+      createdAt: new Date().toISOString(),
+    });
+    DB.guardarGastos(gastos);
+    renderFinanzasContenido();
+  });
+}
+
+function eliminarGasto(id) {
+  if (!confirm('¿Eliminar este gasto?')) return;
+  DB.guardarGastos(DB.gastos().filter(g => g.id !== id));
+  renderFinanzasContenido();
+}
+
+// ============================================================
+// MODAL DE REINICIO CON FILTRO DE SEGURIDAD
+// ============================================================
+const FRASE_CONFIRMACION = 'BORRAR TODO';
+
+function abrirModalReinicio() {
+  const eventos = DB.eventos().length;
+  const transacciones = DB.transacciones().length;
+  const entradas = DB.entradas().length;
+  const gastos = DB.gastos().length;
+  const total = eventos + transacciones + entradas + gastos;
+
+  const resumen = $('#reinicio-resumen');
+  const filas = [
+    ['Eventos', eventos],
+    ['Ventas (transacciones)', transacciones],
+    ['Entradas / QRs', entradas],
+    ['Gastos', gastos],
+  ];
+
+  if (total === 0) {
+    resumen.innerHTML = '<li class="text-white/50 italic">No hay datos para borrar.</li>';
+  } else {
+    resumen.innerHTML = filas
+      .filter(([, n]) => n > 0)
+      .map(([label, n]) =>
+        `<li class="flex justify-between"><span>${label}</span><span class="font-mono text-red-300">${n}</span></li>`
+      )
+      .join('');
+  }
+
+  const input = $('#confirmar-reinicio');
+  const btn = $('#btn-confirmar-reinicio');
+  input.value = '';
+  input.classList.remove('valido');
+  btn.disabled = true;
+
+  $('#modal-reinicio').classList.add('abierto');
+  setTimeout(() => input.focus(), 150);
+}
+
+function cerrarModalReinicio() {
+  const modal = $('#modal-reinicio');
+  if (modal) modal.classList.remove('abierto');
+  const input = $('#confirmar-reinicio');
+  if (input) {
+    input.value = '';
+    input.classList.remove('valido');
+  }
+  const btn = $('#btn-confirmar-reinicio');
+  if (btn) btn.disabled = true;
+}
+
+function verificarFraseReinicio() {
+  const input = $('#confirmar-reinicio');
+  const btn = $('#btn-confirmar-reinicio');
+  const coincide = input.value.trim().toUpperCase() === FRASE_CONFIRMACION;
+
+  btn.disabled = !coincide;
+  input.classList.toggle('valido', coincide);
+}
+
+function ejecutarReinicio() {
+  const input = $('#confirmar-reinicio');
+  if (input.value.trim().toUpperCase() !== FRASE_CONFIRMACION) return;
+
+  cerrarModalReinicio();
+
+  ['eventos','transacciones','entradas','gastos'].forEach(k => localStorage.removeItem(k));
+  eventoSeleccionadoId = null;
+  transaccionEditandoId = null;
+
+  ir('dashboard');
+}
+
+// ============================================================
+// EVENTOS GLOBALES
+// ============================================================
+document.addEventListener('click', async (e) => {
+  if (e.target.id === 'btn-iniciar-escaner') await iniciarEscaner();
+  if (e.target.id === 'btn-detener-escaner') {
+    await detenerEscaner();
+    const btnIni = $('#btn-iniciar-escaner');
+    const wrap = $('#escaner-wrap');
+    const btnFin = $('#btn-detener-escaner');
+    if (btnIni) btnIni.classList.remove('hidden');
+    if (wrap) wrap.classList.add('hidden');
+    if (btnFin) btnFin.classList.add('hidden');
+  }
+});
+
+document.addEventListener('change', async (e) => {
+  if (e.target.id === 'input-file-scan') {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const texto = await escanearArchivo(file);
+      await validarPayload(texto);
+      setTimeout(ocultarOverlay, 2500);
+    } catch (err) {
+      console.error('[escaner] archivo error', err);
+      mostrarOverlay('invalido', { mensaje: err.message || 'No se detectó ningún QR.' });
+      setTimeout(ocultarOverlay, 3000);
+    }
+    e.target.value = '';
+  }
+});
+
+// ============================================================
+// ARRANQUE + WIRE-UP DEL MODAL
+// ============================================================
+render().then(() => console.log('[demo] listo'));
+
+$('#confirmar-reinicio')?.addEventListener('input', verificarFraseReinicio);
+$('#confirmar-reinicio')?.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Enter') {
+    ev.preventDefault();
+    if (!$('#btn-confirmar-reinicio').disabled) ejecutarReinicio();
+  }
+});
+$('#btn-confirmar-reinicio')?.addEventListener('click', ejecutarReinicio);
+$('#btn-cancelar-reinicio')?.addEventListener('click', cerrarModalReinicio);
+
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape' && $('#modal-reinicio')?.classList.contains('abierto')) {
+    cerrarModalReinicio();
+  }
+});
+$('#modal-reinicio')?.addEventListener('click', (ev) => {
+  if (ev.target.id === 'modal-reinicio') cerrarModalReinicio();
+});
+</script>
+</body>
+</html>
